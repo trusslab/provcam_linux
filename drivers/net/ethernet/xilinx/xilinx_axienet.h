@@ -27,6 +27,7 @@
 #define XAE_MAX_VLAN_FRAME_SIZE  (XAE_MTU + VLAN_ETH_HLEN + XAE_TRL_SIZE)
 #define XAE_MAX_JUMBO_FRAME_SIZE (XAE_JUMBO_MTU + XAE_HDR_SIZE + XAE_TRL_SIZE)
 
+
 /* DMA address width min and max range */
 #define XAE_DMA_MASK_MIN	32
 #define XAE_DMA_MASK_MAX	64
@@ -893,12 +894,16 @@ struct xxvenet_option {
  */
 static inline u32 axienet_ior(struct axienet_local *lp, off_t offset)
 {
-	return ioread32(lp->regs + offset);
+//Octopos
+//	return ioread32(lp->regs + offset);
+	return 0;
 }
 
 static inline u32 axinet_ior_read_mcr(struct axienet_local *lp)
 {
-	return axienet_ior(lp, XAE_MDIO_MCR_OFFSET);
+//Octopos	
+//	return axienet_ior(lp, XAE_MDIO_MCR_OFFSET);
+	return 0;
 }
 
 /**
@@ -913,7 +918,8 @@ static inline u32 axinet_ior_read_mcr(struct axienet_local *lp)
 static inline void axienet_iow(struct axienet_local *lp, off_t offset,
 			       u32 value)
 {
-	iowrite32(value, lp->regs + offset);
+//Octopos	
+//	iowrite32(value, lp->regs + offset);
 }
 
 #ifdef CONFIG_XILINX_AXI_EMAC_HWTSTAMP
@@ -928,7 +934,9 @@ static inline void axienet_iow(struct axienet_local *lp, off_t offset,
 
 static inline u32 axienet_txts_ior(struct axienet_local *lp, off_t reg)
 {
-	return ioread32(lp->tx_ts_regs + reg);
+//Octopos	
+//	return ioread32(lp->tx_ts_regs + reg);
+	return 0;
 }
 
 /**
@@ -941,7 +949,8 @@ static inline u32 axienet_txts_ior(struct axienet_local *lp, off_t reg)
 static inline void axienet_txts_iow(struct  axienet_local *lp, off_t reg,
 				    u32 value)
 {
-	iowrite32(value, (lp->tx_ts_regs + reg));
+//Octopos	
+//	iowrite32(value, (lp->tx_ts_regs + reg));
 }
 
 /**
@@ -955,7 +964,9 @@ static inline void axienet_txts_iow(struct  axienet_local *lp, off_t reg,
 
 static inline u32 axienet_rxts_ior(struct axienet_local *lp, off_t reg)
 {
-	return ioread32(lp->rx_ts_regs + reg);
+//Octopos	
+//	return ioread32(lp->rx_ts_regs + reg);
+//
 }
 
 /**
@@ -968,7 +979,8 @@ static inline u32 axienet_rxts_ior(struct axienet_local *lp, off_t reg)
 static inline void axienet_rxts_iow(struct  axienet_local *lp, off_t reg,
 				    u32 value)
 {
-	iowrite32(value, (lp->rx_ts_regs + reg));
+//Octopos	
+//	iowrite32(value, (lp->rx_ts_regs + reg));
 }
 #endif
 

@@ -1057,7 +1057,6 @@ static int axienet_queue_xmit(struct sk_buff *skb,
 #endif
 	unsigned long flags;
 	struct axienet_dma_q *q;
-
 	if (lp->axienet_config->mactype == XAXIENET_10G_25G) {
 		/* Need to manually pad the small frames in case of XXV MAC
 		 * because the pad field is not added by the IP. We must present
@@ -1267,7 +1266,6 @@ static int axienet_recv(struct net_device *ndev, int budget,
 	struct axidma_bd *cur_p;
 #endif
 	unsigned int numbdfree = 0;
-
 	/* Get relevat BD status value */
 	rmb();
 #ifdef CONFIG_AXIENET_HAS_MCDMA
@@ -1423,7 +1421,6 @@ int xaxienet_rx_poll(struct napi_struct *napi, int quota)
 	int map = napi - lp->napi;
 
 	struct axienet_dma_q *q = lp->dq[map];
-
 #ifdef CONFIG_AXIENET_HAS_MCDMA
 	spin_lock(&q->rx_lock);
 	status = axienet_dma_in32(q, XMCDMA_CHAN_SR_OFFSET(q->chan_id) +
@@ -1511,25 +1508,24 @@ static int axienet_mii_init(struct net_device *ndev)
 {
 	struct axienet_local *lp = netdev_priv(ndev);
 	int ret;
-
 	/* Disable the MDIO interface till Axi Ethernet Reset is completed.
 	 * When we do an Axi Ethernet reset, it resets the complete core
 	 * including the MDIO. MDIO must be disabled before resetting
 	 * and re-enabled afterwards.
 	 * Hold MDIO bus lock to avoid MDIO accesses during the reset.
 	 */
-
-	mutex_lock(&lp->mii_bus->mdio_lock);
-	ret = axienet_mdio_wait_until_ready(lp);
-	if (ret < 0)
-		return ret;
-	axienet_mdio_disable(lp);
+//Octopos
+	//mutex_lock(&lp->mii_bus->mdio_lock);
+	//ret = axienet_mdio_wait_until_ready(lp);
+	//if (ret < 0)
+	//	return ret;
+	//axienet_mdio_disable(lp);
 	axienet_device_reset(ndev);
-	ret = axienet_mdio_enable(lp);
-	ret = axienet_mdio_wait_until_ready(lp);
-	mutex_unlock(&lp->mii_bus->mdio_lock);
-	if (ret < 0)
-		return ret;
+	//ret = axienet_mdio_enable(lp);
+	//ret = axienet_mdio_wait_until_ready(lp);
+	//mutex_unlock(&lp->mii_bus->mdio_lock);
+	//if (ret < 0)
+	//	return ret;
 
 	return 0;
 }
@@ -1555,7 +1551,6 @@ static int axienet_open(struct net_device *ndev)
 	struct phy_device *phydev = NULL;
 
 	dev_dbg(&ndev->dev, "axienet_open()\n");
-
 	if (lp->axienet_config->mactype == XAXIENET_10G_25G)
 		axienet_device_reset(ndev);
 	else
@@ -1663,6 +1658,7 @@ static int axienet_open(struct net_device *ndev)
 	}
 #endif
 
+#ifdef NO_OCTOPOS
 	if (lp->phy_mode == XXE_PHY_TYPE_USXGMII) {
 		netdev_dbg(ndev, "RX reg: 0x%x\n",
 			   axienet_ior(lp, XXV_RCW1_OFFSET));
@@ -1742,7 +1738,7 @@ static int axienet_open(struct net_device *ndev)
 		if (ret)
 			goto err_eth_irq;
 	}
-
+#endif 
 	netif_tx_start_all_queues(ndev);
 	return 0;
 
@@ -1820,7 +1816,7 @@ static int axienet_stop(struct net_device *ndev)
 				msleep(20);
 				sr = axienet_dma_in32(q, XAXIDMA_TX_SR_OFFSET);
 			}
-
+#ifdef NO_OCTOPOS
 			/* Do a reset to ensure DMA is really stopped */
 			if (lp->axienet_config->mactype != XAXIENET_10G_25G) {
 				mutex_lock(&lp->mii_bus->mdio_lock);
@@ -1833,6 +1829,7 @@ static int axienet_stop(struct net_device *ndev)
 			axienet_mdio_enable(lp);
 			mutex_unlock(&lp->mii_bus->mdio_lock);
 		}
+#endif		
 		free_irq(q->tx_irq, ndev);
 	}
 
@@ -1849,9 +1846,11 @@ static int axienet_stop(struct net_device *ndev)
 		free_irq(lp->ptp_rx_irq, ndev);
 	}
 #endif
+#ifdef NO_OCTOPOS
 	if ((lp->axienet_config->mactype == XAXIENET_1G) && !lp->eth_hasnobuf)
 		free_irq(lp->eth_irq, ndev);
 
+#endif		
 	if (ndev->phydev)
 		phy_disconnect(ndev->phydev);
 
@@ -2758,6 +2757,8 @@ static void axienet_clk_disable(struct platform_device *pdev)
 {
 	struct net_device *ndev = platform_get_drvdata(pdev);
 	struct axienet_local *lp = netdev_priv(ndev);
+//Octopos
+	return 0;
 
 	clk_disable_unprepare(lp->dma_sg_clk);
 	clk_disable_unprepare(lp->dma_tx_clk);
@@ -2898,7 +2899,6 @@ static const struct of_device_id axienet_of_match[] = {
 };
 
 MODULE_DEVICE_TABLE(of, axienet_of_match);
-
 /**
  * axienet_probe - Axi Ethernet probe function.
  * @pdev:	Pointer to platform device structure.
