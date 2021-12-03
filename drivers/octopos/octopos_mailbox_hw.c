@@ -326,10 +326,11 @@ static void octopos_mailbox_deduct_and_set_owner(
 	struct octopos_mbox_ctrl *mbox_ctrl, 
 	u8 owner)
 {
-	u32 reg = octopos_mailbox_get_status_reg(mbox_ctrl) - 0x1001;
-	reg = (OWNER_MASK & reg) | owner << 24;
+	//u32 reg = octopos_mailbox_get_status_reg(mbox_ctrl) - 0x1001;
+	//reg = (OWNER_MASK & reg) | owner << 24;
 
-	octopos_mailbox_set_status_reg(mbox_ctrl, reg);
+	//octopos_mailbox_set_status_reg(mbox_ctrl, reg);
+	octopos_mailbox_set_status_reg(mbox_ctrl, 0xFF000000);
 }
 
 int octopos_mailbox_attest_owner_fast_hw(struct octopos_mbox_ctrl *mbox_ctrl)

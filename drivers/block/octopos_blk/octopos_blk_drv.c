@@ -57,8 +57,10 @@ static void obd_yield_storage_queues(struct work_struct *work)
  */
 void obd_queue_timeout_update(uint8_t queue_id, timeout_t timeout)
 {
+#ifdef FINITE_DELEGATION
 	if (timeout <= MAILBOX_MIN_PRACTICAL_TIMEOUT_VAL)
 		schedule_work(&yield_wq);
+#endif
 }
 
 void delayed_obd_init(struct timer_list *_timer)
@@ -76,6 +78,7 @@ void delayed_obd_init(struct timer_list *_timer)
 /*
  * Process a single bvec of a bio.
  */
+bool delegation_happened = false;
 static int obd_do_bvec(struct page *page, unsigned int len, unsigned int off,
 		       unsigned int op, sector_t sector)
 {
@@ -96,6 +99,8 @@ static int obd_do_bvec(struct page *page, unsigned int len, unsigned int off,
 	factor = 512 / STORAGE_BLOCK_SIZE;
 
 	mutex_lock(&obd_lock);
+
+#ifdef FINITE_DELEGATION
 	/* FIXME: we need to keep separate counts for each storage queue. */
 	if (get_queue_limit(data_queue) < num_blocks ||
 	    /* The +1 is because we need to send and receive one message on the cmd
@@ -129,6 +134,21 @@ static int obd_do_bvec(struct page *page, unsigned int len, unsigned int off,
 	decrement_queue_limit(data_queue, num_blocks);
 	decrement_queue_limit(Q_STORAGE_CMD_IN, 1);
 	decrement_queue_limit(Q_STORAGE_CMD_OUT, 1);
+#else
+	if (!delegation_happened) {
+		int ret = request_secure_storage_access(
+	                 STORAGE_UNTRUSTED_ROOT_FS_PARTITION_SIZE,
+	                 MAILBOX_NO_LIMIT_VAL,
+	                 MAILBOX_MAX_TIMEOUT_VAL, NULL, NULL, NULL);
+	        if (ret) {
+	                 printk("Error (%s): Failed to get secure access to "
+	                        "storage.\n", __func__);
+			 mutex_unlock(&obd_lock);
+	                 return -EIO;
+	        }
+		delegation_happened = true;
+	}
+#endif
 	mem = kmap_atomic(page);
 	if (!op_is_write(op)) {
 		read_secure_storage_blocks(mem + off, sector * factor, num_blocks);
