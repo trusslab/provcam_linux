@@ -432,39 +432,32 @@ static int request_secure_storage_queues_access(limit_t limit,
 
 	ret = mailbox_attest_queue_access(Q_STORAGE_CMD_IN, limit, timeout);
 	if (!ret) {
-#ifdef FINITE_DELEGATION
 		printf("%s: Error: failed to attest secure storage cmd write "
 		       "access\n", __func__);
 		return ERR_FAULT;
-#endif
 	}
 
 	ret = mailbox_attest_queue_access(Q_STORAGE_CMD_OUT, limit, timeout);
 	if (!ret) {
-#ifdef FINITE_DELEGATION
 		printf("%s: Error: failed to attest secure storage cmd read "
 		       "access\n", __func__);
 		wait_until_empty(Q_STORAGE_CMD_IN, MAILBOX_QUEUE_SIZE);
 		mailbox_yield_to_previous_owner(Q_STORAGE_CMD_IN);
 		return ERR_FAULT;
-#endif
 	}
 
 	ret = mailbox_attest_queue_access(Q_STORAGE_DATA_IN, limit, timeout);
 	if (!ret) {
-#ifdef FINITE_DELEGATION
 		printf("%s: Error: failed to attest secure storage data write "
 		       "access\n", __func__);
 		wait_until_empty(Q_STORAGE_CMD_IN, MAILBOX_QUEUE_SIZE);
 		mailbox_yield_to_previous_owner(Q_STORAGE_CMD_IN);
 		mailbox_yield_to_previous_owner(Q_STORAGE_CMD_OUT);
 		return ERR_FAULT;
-#endif
 	}
 
 	ret = mailbox_attest_queue_access(Q_STORAGE_DATA_OUT, limit, timeout);
 	if (!ret) {
-#ifdef FINITE_DELEGATION
 		printf("%s: Error: failed to attest secure storage data read "
 		       "access\n", __func__);
 		wait_until_empty(Q_STORAGE_CMD_IN, MAILBOX_QUEUE_SIZE);
@@ -473,7 +466,6 @@ static int request_secure_storage_queues_access(limit_t limit,
 		mailbox_yield_to_previous_owner(Q_STORAGE_CMD_OUT);
 		mailbox_yield_to_previous_owner(Q_STORAGE_DATA_IN);
 		return ERR_FAULT;
-#endif
 	}
 
 #ifndef UNTRUSTED_DOMAIN
