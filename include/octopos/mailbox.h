@@ -97,6 +97,7 @@ typedef uint32_t timeout_t;
 /* FIXME: move somewhere else */
 #ifdef UNTRUSTED_DOMAIN
 void mailbox_yield_to_previous_owner(uint8_t queue_id);
+int mailbox_attest_queue_access_fast(uint8_t queue_id);
 int mailbox_attest_queue_access(uint8_t queue_id, limit_t limit,
 				timeout_t timeout);
 void reset_queue_sync(uint8_t queue_id, int init_val);

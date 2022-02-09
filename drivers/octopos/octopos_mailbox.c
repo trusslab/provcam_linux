@@ -359,6 +359,11 @@ void mailbox_yield_to_previous_owner(uint8_t queue_id)
 }
 
 /* FIXME: adapted from the same func in mailbox_runtime.c */
+int mailbox_attest_queue_access_fast(uint8_t queue_id)
+{
+	return octopos_mailbox_attest_owner_fast_hw(mbox_ctrl_map[queue_id]);
+}
+/* FIXME: adapted from the same func in mailbox_runtime.c */
 int mailbox_attest_queue_access(uint8_t queue_id, limit_t limit,
 				timeout_t timeout)
 {

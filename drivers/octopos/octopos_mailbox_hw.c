@@ -408,6 +408,7 @@ static irqreturn_t xilinx_mbox_interrupt(int irq, void *p)
 			break;
 		case Q_STORAGE_CMD_OUT:
 		case Q_STORAGE_DATA_OUT:
+		case Q_NETWORK_CMD_OUT:
 		case Q_NETWORK_DATA_OUT:
 			// if (interrupt == Q_NETWORK_DATA_OUT)
 			// 	schedule_work(&net_wq);
@@ -423,6 +424,7 @@ static irqreturn_t xilinx_mbox_interrupt(int irq, void *p)
 		case Q_OSU:
 		case Q_STORAGE_CMD_IN:
 		case Q_STORAGE_DATA_IN:
+		case Q_NETWORK_CMD_IN:
 		case Q_NETWORK_DATA_IN:
 			up(&interrupts[mbox->qid]);
 			break;
@@ -468,7 +470,15 @@ static irqreturn_t octopos_mbox_ctrl_interrupt(int irq, void *p)
 			xilinx_mbox_tx_set_threshold(mbox, 0);
 			break;
 		case Q_NETWORK_DATA_IN:
+		case Q_NETWORK_CMD_IN:
+			xilinx_mbox_tx_intmask(mbox, true);
+			xilinx_mbox_tx_set_threshold(mbox, 0);
+			break;
 		case Q_NETWORK_DATA_OUT:
+		case Q_NETWORK_CMD_OUT:	
+			xilinx_mbox_rx_intmask(mbox, true);
+			xilinx_mbox_rx_set_threshold(mbox, MAILBOX_DEFAULT_RX_THRESHOLD_LARGE);
+			break;
 		default:
 			dev_err(mbox->dev, "invalid mbox (%d).\n", mbox->qid);
 			BUG();
