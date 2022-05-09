@@ -86,13 +86,13 @@ typedef uint32_t timeout_t;
 /* FIXME: these are also defined in octopos/runtime.h */
 #define MAILBOX_MAX_LIMIT_VAL			0xFFE
 #define MAILBOX_MAX_TIMEOUT_VAL			0xFFE
-#ifndef ARCH_SEC_HW
+//#ifndef ARCH_SEC_HW
 #define MAILBOX_MIN_PRACTICAL_TIMEOUT_VAL	2
 #define MAILBOX_DEFAULT_TIMEOUT_VAL		6
-#else
-#define MAILBOX_MIN_PRACTICAL_TIMEOUT_VAL	20
-#define MAILBOX_DEFAULT_TIMEOUT_VAL		60
-#endif
+//#else
+//#define MAILBOX_MIN_PRACTICAL_TIMEOUT_VAL	20
+//#define MAILBOX_DEFAULT_TIMEOUT_VAL		60
+//#endif
 
 /* FIXME: move somewhere else */
 #ifdef UNTRUSTED_DOMAIN

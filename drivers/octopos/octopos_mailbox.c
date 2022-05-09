@@ -72,7 +72,7 @@ void callback_timer(struct timer_list *_timer)
 {
 	int i;
 
-	mod_timer(&timer, jiffies + msecs_to_jiffies(100));	
+	mod_timer(&timer, jiffies + msecs_to_jiffies(1000));	
 	
 	for (i = 1; i <= NUM_QUEUES; i++) {
 		if (queue_timeouts[i] &&
@@ -485,7 +485,7 @@ static int __init om_init(void)
 	memset(queue_timeout_update_callbacks, 0x0, sizeof(queue_timeout_update_callbacks));
 
 	timer_setup(&timer, callback_timer, 0);
-	mod_timer(&timer, jiffies + msecs_to_jiffies(100));	
+	mod_timer(&timer, jiffies + msecs_to_jiffies(1000));	
 
 	/* register char dev */
 	err = misc_register(&om_miscdev);

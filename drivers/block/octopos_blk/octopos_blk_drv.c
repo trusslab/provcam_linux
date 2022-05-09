@@ -57,10 +57,12 @@ static void obd_yield_storage_queues(struct work_struct *work)
  */
 void obd_queue_timeout_update(uint8_t queue_id, timeout_t timeout)
 {
-#ifdef FINITE_DELEGATION
-	if (timeout <= MAILBOX_MIN_PRACTICAL_TIMEOUT_VAL)
+//#ifdef FINITE_DELEGATION
+	if (timeout <= MAILBOX_MIN_PRACTICAL_TIMEOUT_VAL) {
+		printk("%s: queue(%d) timeout(%d)\n", __func__, queue_id, (int) timeout);
 		schedule_work(&yield_wq);
-#endif
+	}
+//#endif
 }
 
 void delayed_obd_init(struct timer_list *_timer)
@@ -78,7 +80,7 @@ void delayed_obd_init(struct timer_list *_timer)
 /*
  * Process a single bvec of a bio.
  */
-bool delegation_happened = false;
+//bool delegation_happened = false;
 static int obd_do_bvec(struct page *page, unsigned int len, unsigned int off,
 		       unsigned int op, sector_t sector)
 {
@@ -135,18 +137,24 @@ static int obd_do_bvec(struct page *page, unsigned int len, unsigned int off,
 	decrement_queue_limit(Q_STORAGE_CMD_IN, 1);
 	decrement_queue_limit(Q_STORAGE_CMD_OUT, 1);
 #else
-	if (!delegation_happened) {
+	if (get_queue_timeout(data_queue) < MAILBOX_MIN_PRACTICAL_TIMEOUT_VAL ||
+            get_queue_timeout(Q_STORAGE_CMD_IN) < MAILBOX_MIN_PRACTICAL_TIMEOUT_VAL ||
+            get_queue_timeout(Q_STORAGE_CMD_OUT) < MAILBOX_MIN_PRACTICAL_TIMEOUT_VAL) {
+
+//	if (!delegation_happened) {
+		yield_secure_storage_access();
+		
 		int ret = request_secure_storage_access(
 	                 STORAGE_UNTRUSTED_ROOT_FS_PARTITION_SIZE,
 	                 MAILBOX_NO_LIMIT_VAL,
-	                 MAILBOX_MAX_TIMEOUT_VAL, NULL, NULL, NULL);
+	                 MAILBOX_DEFAULT_TIMEOUT_VAL, NULL, NULL, NULL);
 	        if (ret) {
 	                 printk("Error (%s): Failed to get secure access to "
 	                        "storage.\n", __func__);
 			 mutex_unlock(&obd_lock);
 	                 return -EIO;
 	        }
-		delegation_happened = true;
+//		delegation_happened = true;
 	}
 #endif
 	mem = kmap_atomic(page);
