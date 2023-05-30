@@ -99,6 +99,7 @@ struct xvip_device {
 	void __iomem *iomem;
 	struct clk *clk;
 	u32 saved_ctrl;
+    u32 id;
 };
 
 /**
@@ -145,12 +146,50 @@ int xvip_enum_frame_size(struct v4l2_subdev *subdev,
 
 static inline u32 xvip_read(struct xvip_device *xvip, u32 addr)
 {
-	return ioread32(xvip->iomem + addr);
+    // u32 temp_reading = 0;
+
+    // switch (xvip->id)
+    // {
+    //     case 668:
+    //         printk("[Myles]%s: reading 0x%08x from reg offset 0x%08x of device id: %d.\n", __func__, temp_reading, addr, xvip->id);
+    //         break;
+    //     case 669:
+    //         break;
+    //     case 670:
+    //         break;
+    //     case 671:
+    //         break;
+    //     default:
+    //         temp_reading = ioread32(xvip->iomem + addr);
+    // }
+
+    // // printk("[Myles]%s: reading 0x%08x from reg offset 0x%08x of device id: %d.\n", __func__, temp_reading, addr, xvip->id);
+
+    u32 temp_reading = ioread32(xvip->iomem + addr);
+
+	return temp_reading;
 }
 
 static inline void xvip_write(struct xvip_device *xvip, u32 addr, u32 value)
 {
-	iowrite32(value, xvip->iomem + addr);
+    // switch (xvip->id)
+    // {
+    //     case 668:
+    //         printk("[Myles]%s: writing 0x%08x to reg offset 0x%08x of device id: %d.\n", __func__, value, addr, xvip->id);
+    //         break;
+    //     case 669:
+    //         break;
+    //     case 670:
+    //         break;
+    //     case 671:
+    //         break;
+    //     default:
+    //         iowrite32(value, xvip->iomem + addr);
+    // }
+
+    // // printk("[Myles]%s: writing 0x%08x to reg offset 0x%08x of device id: %d.\n", __func__, value, addr, xvip->id);
+
+    iowrite32(value, xvip->iomem + addr);
 }
 
 static inline void xvip_clr(struct xvip_device *xvip, u32 addr, u32 clr)

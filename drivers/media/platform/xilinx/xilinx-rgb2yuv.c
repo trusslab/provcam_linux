@@ -518,6 +518,8 @@ static int xrgb2yuv_probe(struct platform_device *pdev)
 		goto error;
 	}
 
+    myles_printk("[myles]xrgb2yuv_probe: xrgb2yuv is probed.\n");
+
 	return 0;
 
 error:

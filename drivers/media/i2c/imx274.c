@@ -27,6 +27,29 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
 
+// Myles secure IO
+#include <linux/dma-mapping.h>
+dma_addr_t dma_handle_4_imx274;
+u64 iomem_addr_imx274 = 0;
+
+static inline void execute_tcs_command(const u64 addr, const u32 command_data, const u32 command_data_receipt)
+{
+	// printk("[Myles]%s: write: going to execute tcs command: 0x%08x at addr: 0x%08x.\n", __func__, command_data, addr);
+	iowrite32(command_data, addr);
+	// printk("[Myles]%s: read: going to execute tcs command at addr: 0x%08x.\n", __func__, addr);
+	u32 temp_read_data = ioread32(addr);
+	// printk("[Myles]%s: read: get: 0x%08x at addr: 0x%08x.\n", __func__, temp_read_data, addr);
+	while (temp_read_data != command_data_receipt)
+	{
+		temp_read_data = ioread32(addr);
+	}
+	// printk("[Myles]%s: write: exection of tcs command: 0x%08x at addr: 0x%08x is done.\n", __func__, command_data, addr);
+}
+
+// TCS driver
+#include <linux/secure-cam.h>
+u8 tcs_mode_status_indicator = 0;
+
 /*
  * See "SHR, SVR Setting" in datasheet
  */
@@ -582,12 +605,20 @@ static int imx274_write_table(struct stimx274 *priv, const struct reg_8 table[])
 		    (next->addr == IMX274_TABLE_WAIT_MS) ||
 		    (range_count == max_range_vals)) {
 			if (range_count == 1)
-				err = regmap_write(regmap,
-						   range_start, range_vals[0]);
+            {
+				// err = regmap_write(regmap,
+				// 		   range_start, range_vals[0]);
+                // printk("[Myles]%s: writing to offset: %08x, data: %08x (%d).\n", __func__, range_start, range_vals[0], err);
+				regmap_write(regmap, range_start, range_vals[0]);
+            }
 			else if (range_count > 1)
-				err = regmap_bulk_write(regmap, range_start,
-							&range_vals[0],
-							range_count);
+            {
+				// err = regmap_bulk_write(regmap, range_start,
+				// 			&range_vals[0],
+				// 			range_count);
+                // printk("[Myles]%s: writing to offset: %08x, data: %08x, num: %d (%d).\n", __func__, range_start, *(u32*)(range_vals), range_count, err);
+                regmap_bulk_write(regmap, range_start, &range_vals[0], range_count);
+            }
 			else
 				err = 0;
 
@@ -619,9 +650,11 @@ static int imx274_write_table(struct stimx274 *priv, const struct reg_8 table[])
 
 static inline int imx274_write_reg(struct stimx274 *priv, u16 addr, u8 val)
 {
-	int err;
+	int err = 0;
 
-	err = regmap_write(priv->regmap, addr, val);
+	// err = regmap_write(priv->regmap, addr, val);
+    // printk("[Myles]%s: writing to offset: %08x, data: %08x (%d).\n", __func__, addr, val, err);
+	regmap_write(priv->regmap, addr, val);
 	if (err)
 		dev_err(&priv->client->dev,
 			"%s : i2c write failed, %x = %x\n", __func__,
@@ -654,6 +687,7 @@ static int imx274_read_mbreg(struct stimx274 *priv, u16 addr, u32 *val,
 	int err;
 
 	err = regmap_bulk_read(priv->regmap, addr, &val_le, nbytes);
+    // printk("[Myles]%s: reading from offset: %08x, data: %08x, nbytes: %08x (%d).\n", __func__, addr, val_le, nbytes, err);
 	if (err) {
 		dev_err(&priv->client->dev,
 			"%s : i2c bulk read failed, %x (%zu bytes)\n",
@@ -683,9 +717,11 @@ static int imx274_write_mbreg(struct stimx274 *priv, u16 addr, u32 val,
 			      size_t nbytes)
 {
 	__le32 val_le = cpu_to_le32(val);
-	int err;
+	int err = 0;
 
-	err = regmap_bulk_write(priv->regmap, addr, &val_le, nbytes);
+    // printk("[Myles]%s: writing to offset: 0x%08x, data: 0x%08x(0x%08x), nbytes: %d (%d).\n", __func__, addr, val_le, val, nbytes, err);
+	// err = regmap_bulk_write(priv->regmap, addr, &val_le, nbytes);
+	regmap_bulk_write(priv->regmap, addr, &val_le, nbytes);
 	if (err)
 		dev_err(&priv->client->dev,
 			"%s : i2c bulk write failed, %x = %x (%zu bytes)\n",
@@ -777,6 +813,13 @@ static void imx274_reset(struct stimx274 *priv, int rst)
  */
 static int imx274_s_ctrl(struct v4l2_ctrl *ctrl)
 {
+
+	if (secure_cam_is_in_tcs_mode)
+	{
+		printk("[Myles]%s: new ctrl->id: %d, skipping\n", __func__, ctrl->id);
+		return 0;
+	}
+
 	struct v4l2_subdev *sd = ctrl_to_sd(ctrl);
 	struct stimx274 *imx274 = to_imx274(sd);
 	int ret = -EINVAL;
@@ -1205,6 +1248,8 @@ static int imx274_g_frame_interval(struct v4l2_subdev *sd,
 				   struct v4l2_subdev_frame_interval *fi)
 {
 	struct stimx274 *imx274 = to_imx274(sd);
+	
+	printk("[Myles]%s: getting frame interval, frame rate = %d / %d\n", __func__, imx274->frame_interval.numerator, imx274->frame_interval.denominator);
 
 	fi->interval = imx274->frame_interval;
 	dev_dbg(&imx274->client->dev, "%s frame rate = %d / %d\n",
@@ -1226,6 +1271,13 @@ static int imx274_g_frame_interval(struct v4l2_subdev *sd,
 static int imx274_s_frame_interval(struct v4l2_subdev *sd,
 				   struct v4l2_subdev_frame_interval *fi)
 {
+
+	if (secure_cam_is_in_tcs_mode)
+	{
+		printk("[Myles]%s: setting frame interval, frame rate = %d / %d, skipping\n", __func__, fi->interval.numerator, fi->interval.denominator);
+		return 0;
+	}
+
 	struct stimx274 *imx274 = to_imx274(sd);
 	struct v4l2_ctrl *ctrl = imx274->ctrls.exposure;
 	int min, max, def;
@@ -1271,6 +1323,10 @@ unlock:
  */
 static int imx274_load_default(struct stimx274 *priv)
 {
+	// Skip if in TCS mode
+	if (secure_cam_is_in_tcs_mode)
+		return 0;
+
 	int ret;
 
 	/* load default control values */
@@ -1324,6 +1380,24 @@ static int imx274_s_stream(struct v4l2_subdev *sd, int on)
 		on ? "Stream Start" : "Stream Stop",
 		imx274->mode - &imx274_modes[0]);
 
+	if (secure_cam_is_in_tcs_mode)
+	{
+		printk("[Myles]%s: mode: %td, on(or not): %d, skipping.\n", __func__, imx274->mode - &imx274_modes[0], on);
+		if (on)
+		{
+			execute_tcs_command(iomem_addr_imx274 + IO_ADDR_HIGH_TCS_COMMAND_OFFSET, 
+				IO_ADDR_HIGH_TCS_COMMAND_START,IO_ADDR_HIGH_TCS_COMMAND_START + IO_ADDR_HIGH_TCS_COMMAND_RECIPT_OFFSET);
+			printk("[Myles]%s: recording has started.\n", __func__);
+		}
+		else
+		{
+			execute_tcs_command(iomem_addr_imx274 + IO_ADDR_HIGH_TCS_COMMAND_OFFSET, 
+				IO_ADDR_HIGH_TCS_COMMAND_STOP,IO_ADDR_HIGH_TCS_COMMAND_STOP + IO_ADDR_HIGH_TCS_COMMAND_RECIPT_OFFSET);
+			printk("[Myles]%s: recording has stopped.\n", __func__);
+		}
+		return 0;
+	}
+
 	mutex_lock(&imx274->lock);
 
 	if (on) {
@@ -1358,6 +1432,7 @@ static int imx274_s_stream(struct v4l2_subdev *sd, int on)
 		if (ret)
 			goto fail;
 	} else {
+
 		/* stop stream */
 		ret = imx274_write_table(imx274, imx274_stop);
 		if (ret)
@@ -1664,7 +1739,9 @@ static int imx274_set_test_pattern(struct stimx274 *priv, int val)
 	} else if (val <= TEST_PATTERN_V_COLOR_BARS) {
 		err = imx274_write_reg(priv, IMX274_TEST_PATTERN_REG, val - 1);
 		if (!err)
+        {
 			err = imx274_write_table(priv, imx274_tp_regs);
+        }
 	} else {
 		err = -EINVAL;
 	}
@@ -1861,6 +1938,22 @@ static int imx274_probe(struct i2c_client *client)
 	v4l2_i2c_subdev_init(sd, client, &imx274_subdev_ops);
 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE | V4L2_SUBDEV_FL_HAS_EVENTS;
 
+	// Myles: do secure IO re-config
+    if ((iomem_addr_imx274 == 0) || (iomem_addr_imx274 == NULL))
+    {
+		int cached_subdev_id = sd->dev->id; 
+        sd->dev->id = 667;
+        // sd->dev.coherent_dma_mask = -1;
+        iomem_addr_imx274 = dma_alloc_coherent(sd->dev, 4096, &dma_handle_4_imx274, GFP_KERNEL | GFP_DMA);
+        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75001000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_imx274: 0x%016lx...\n", __func__, iomem_addr_imx274, iomem_addr_imx274 == NULL, virt_to_phys(iomem_addr_imx274), dma_handle_4_imx274);
+		sd->dev->id = cached_subdev_id;
+	}
+	// if ((iomem_addr_imx274 == 0) || (iomem_addr_imx274 == NULL))
+	// {
+	// 	iomem_addr_imx274 = phys_to_virt(IO_ADDR_HIGH_MB_4_IMX274_BASE);
+	// 	printk("[Myles]%s: for phys_addr: 0x%016llx, we get virt_addr: 0x%016llx.\n", __func__, IO_ADDR_HIGH_MB_4_IMX274_BASE, iomem_addr_imx274);
+	// }
+
 	/* initialize subdev media pad */
 	imx274->pad.flags = MEDIA_PAD_FL_SOURCE;
 	sd->entity.function = MEDIA_ENT_F_CAM_SENSOR;
@@ -1871,15 +1964,16 @@ static int imx274_probe(struct i2c_client *client)
 		goto err_regmap;
 	}
 
+	// Below is commented out as hard reset is controlled by MicroBlaze
 	/* initialize sensor reset gpio */
-	imx274->reset_gpio = devm_gpiod_get_optional(&client->dev, "reset",
-						     GPIOD_OUT_HIGH);
-	if (IS_ERR(imx274->reset_gpio)) {
-		if (PTR_ERR(imx274->reset_gpio) != -EPROBE_DEFER)
-			dev_err(&client->dev, "Reset GPIO not setup in DT");
-		ret = PTR_ERR(imx274->reset_gpio);
-		goto err_me;
-	}
+	// imx274->reset_gpio = devm_gpiod_get_optional(&client->dev, "reset",
+	// 					     GPIOD_OUT_HIGH);
+	// if (IS_ERR(imx274->reset_gpio)) {
+	// 	if (PTR_ERR(imx274->reset_gpio) != -EPROBE_DEFER)
+	// 		dev_err(&client->dev, "Reset GPIO not setup in DT");
+	// 	ret = PTR_ERR(imx274->reset_gpio);
+	// 	goto err_me;
+	// }
 
 	/* pull sensor out of reset */
 	imx274_reset(imx274, 1);
@@ -1951,7 +2045,9 @@ static int imx274_probe(struct i2c_client *client)
 		goto err_ctrls;
 	}
 
+	tcs_mode_status_indicator = 1;
 	dev_info(&client->dev, "imx274 : imx274 probe success !\n");
+
 	return 0;
 
 err_ctrls:

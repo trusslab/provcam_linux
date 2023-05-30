@@ -503,6 +503,8 @@ static int xremap_probe(struct platform_device *pdev)
 
 	dev_info(&pdev->dev, "device registered\n");
 
+    myles_printk("[myles]xremap_probe: xremap is probed.\n");
+
 	return 0;
 
 error:

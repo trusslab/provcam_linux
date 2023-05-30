@@ -220,13 +220,14 @@ void *arch_dma_alloc(struct device *dev, size_t size, dma_addr_t *dma_handle,
 	size = PAGE_ALIGN(size);
 
 	if (!gfpflags_allow_blocking(flags)) {
+
 		ret = dma_alloc_from_pool(size, &page, flags);
 		if (!ret)
 			return NULL;
 		goto done;
 	}
 
-	page = __dma_direct_alloc_pages(dev, size, dma_handle, flags, attrs);
+    page = __dma_direct_alloc_pages(dev, size, dma_handle, flags, attrs);
 	if (!page)
 		return NULL;
 

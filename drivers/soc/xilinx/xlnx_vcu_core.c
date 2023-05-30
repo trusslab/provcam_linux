@@ -109,6 +109,8 @@ static int xvcu_core_probe(struct platform_device *pdev)
 
 	dev_dbg(&pdev->dev, "Successfully added MFD devices\n");
 
+    printk("[myles]%s: vcu_core is probed.\n", __func__);
+
 	return 0;
 
 err_mfd_add_devices:

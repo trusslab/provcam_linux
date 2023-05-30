@@ -171,6 +171,12 @@ source "drivers/media/platform/Kconfig"
 source "drivers/media/mmc/Kconfig"
 source "drivers/media/radio/Kconfig"
 
+# Myles: secure camera
+
+config SECURE_CAMERA
+    bool "Control of the secure camera"
+    default y
+
 comment "Supported FireWire (IEEE 1394) Adapters"
 	depends on DVB_CORE && FIREWIRE
 source "drivers/media/firewire/Kconfig"

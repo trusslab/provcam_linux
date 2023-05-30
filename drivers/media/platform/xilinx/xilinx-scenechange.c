@@ -153,6 +153,9 @@ static int xscd_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to request IRQ\n");
 
 	dev_info(xscd->dev, "scene change detect device found!\n");
+
+    myles_printk("[myles]xscd_probe: xscd is probed.\n");
+
 	return 0;
 }
 

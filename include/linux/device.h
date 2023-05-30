@@ -1746,6 +1746,8 @@ void _dev_info(const struct device *dev, const char *fmt, ...)
 #define dev_info(dev, fmt, ...)						\
 	_dev_info(dev, dev_fmt(fmt), ##__VA_ARGS__)
 
+// #define DEBUG
+
 #if defined(CONFIG_DYNAMIC_DEBUG)
 #define dev_dbg(dev, fmt, ...)						\
 	dynamic_dev_dbg(dev, dev_fmt(fmt), ##__VA_ARGS__)
@@ -1754,6 +1756,35 @@ void _dev_info(const struct device *dev, const char *fmt, ...)
 	dev_printk(KERN_DEBUG, dev, dev_fmt(fmt), ##__VA_ARGS__)
 #else
 #define dev_dbg(dev, fmt, ...)						\
+({									\
+	if (0)								\
+		dev_printk(KERN_DEBUG, dev, dev_fmt(fmt), ##__VA_ARGS__); \
+})
+#endif
+
+#define MYLES_DEBUG
+
+#if defined(MYLES_DEBUG)
+#define myles_printk(fmt, ...)                      \
+    printk(dev_fmt(fmt), ##__VA_ARGS__);
+#else 
+#define myles_printk(fmt, ...)						\
+({									\
+	if (0)								\
+		printk(dev_fmt(fmt), ##__VA_ARGS__); \
+})
+#endif
+
+// #define MYLES_DEV_DEBUG
+
+#if defined(MYLES_DEV_DYNAMIC_DEBUG)
+#define myles_dev_dbg(dev, fmt, ...)						\
+	dynamic_dev_dbg(dev, dev_fmt(fmt), ##__VA_ARGS__)
+#elif defined(MYLES_DEV_DEBUG)
+#define myles_dev_dbg(dev, fmt, ...)						\
+	dev_printk(KERN_DEBUG, dev, dev_fmt(fmt), ##__VA_ARGS__)
+#else
+#define myles_dev_dbg(dev, fmt, ...)						\
 ({									\
 	if (0)								\
 		dev_printk(KERN_DEBUG, dev, dev_fmt(fmt), ##__VA_ARGS__); \

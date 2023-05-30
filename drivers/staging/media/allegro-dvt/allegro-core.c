@@ -85,6 +85,7 @@
  * because it needs to write SPS/PPS NAL units. The encoder writes the actual
  * frame data after the offset.
  */
+ // Sequence Parameter Set (SPS) and the Picture Parameter Set (PPS)
 #define ENCODER_STREAM_OFFSET SZ_64
 
 #define SIZE_MACROBLOCK 16
@@ -2893,6 +2894,9 @@ static int allegro_firmware_request_nowait(struct allegro_dev *dev)
 
 static int allegro_probe(struct platform_device *pdev)
 {
+
+    myles_printk("[myles]allegro_probe: attempt to probe allegro(likely encoder).\n");
+
 	struct allegro_dev *dev;
 	struct resource *res, *sram_res;
 	int ret;
@@ -2970,6 +2974,8 @@ static int allegro_probe(struct platform_device *pdev)
 			 "failed to request firmware: %d\n", ret);
 		return ret;
 	}
+
+    myles_printk("[myles]allegro_probe: allegro(likely encoder) is probed.\n");
 
 	return 0;
 }

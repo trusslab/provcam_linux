@@ -349,6 +349,8 @@ static int xcfa_probe(struct platform_device *pdev)
 		goto error;
 	}
 
+    myles_printk("[myles]xcfa_probe: xcfa is probed.\n");
+    
 	return 0;
 
 error:

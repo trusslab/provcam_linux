@@ -25,6 +25,9 @@ obj-y += rc/
 
 obj-$(CONFIG_CEC_CORE) += cec/
 
+# Myles: do secure camera
+obj-$(CONFIG_SECURE_CAMERA) += secure-cam.o
+
 #
 # Finally, merge the drivers that require the core
 #

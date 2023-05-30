@@ -2407,6 +2407,8 @@ static int xm2m_msc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, xm2msc);
 
+    myles_printk("[myles]xm2m_msc_probe: xm2m_msc is probed.\n");
+
 	return 0;
 
 unreg_dev:

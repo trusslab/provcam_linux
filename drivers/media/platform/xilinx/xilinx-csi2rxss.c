@@ -551,20 +551,127 @@ to_xcsi2rxssstate(struct v4l2_subdev *subdev)
 	return container_of(subdev, struct xcsi2rxss_state, subdev);
 }
 
+// TCS driver
+#include <linux/secure-cam.h>
+
+// secure IO
+#include <linux/dma-mapping.h>
+struct platform_device *global_pdev = NULL;
+dma_addr_t dma_handle_4_csi2rxss;
+volatile u64 iomem_addr_csi2rxss = 0;
+
+// record related
+#include <linux/secure-cam-rec.h>
+
+// replay related
+#include "xilinx-csi2rxss-presets.h"
+#include <linux/secure-cam-rep.h>
+// struct mutex replaying_mutex;
+// u8 current_replay_status = 0;	// 0 means replaying init; 1 means replaying start; 2 means replaying stop
+u8 csi2rxss_replay_status = 0;	// 0: init; 1: start; 2: stop; other: invalid
+
+void check_and_switch_to_next_presets_4_csi2rxss(void)
+{
+	switch(csi2rxss_replay_status)
+	{
+		case 0:
+			if (check_and_switch_current_replay_preset(csi2rxss_init_preset_num_of_commands, csi2rxss_init_preset_cmd_type, 
+					csi2rxss_init_preset_size, csi2rxss_init_preset_addr, csi2rxss_init_preset_data))
+					{
+						++csi2rxss_replay_status;
+					}
+			break;
+		case 1:
+			if (check_and_switch_current_replay_preset(csi2rxss_start_preset_num_of_commands, csi2rxss_start_preset_cmd_type, 
+					csi2rxss_start_preset_size, csi2rxss_start_preset_addr, csi2rxss_start_preset_data))
+					{
+						++csi2rxss_replay_status;
+					}
+			break;
+		case 2:
+			if (check_and_switch_current_replay_preset(csi2rxss_stop_preset_num_of_commands, csi2rxss_stop_preset_cmd_type, 
+					csi2rxss_stop_preset_size, csi2rxss_stop_preset_addr, csi2rxss_stop_preset_data))
+					{
+						++csi2rxss_replay_status;
+					}
+			break;
+	}
+}
+
 /*
  * Regsiter related operations
  */
 static inline u32 xcsi2rxss_read(struct xcsi2rxss_core *xcsi2rxss,
 					u32 addr)
 {
-	return ioread32(xcsi2rxss->iomem + addr);
+	// replay
+	if (secure_cam_is_in_tcs_mode)
+	{
+		check_and_switch_to_next_presets_4_csi2rxss();
+		u32 data_to_return = 0;
+		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_READ, 32, addr, 0, &data_to_return);
+		if (replay_result == -1)
+			printk("[Myles]%s: replay error.\n", __func__);
+
+		return data_to_return;
+	}
+
+	// lock for recording
+	// lock_recording_mutex(1);
+
+    iowrite32(addr, iomem_addr_csi2rxss);
+    iowrite32(32, iomem_addr_csi2rxss + 4);
+    
+    u32 temp_reading_data = 32;
+    while (temp_reading_data == 32)
+    {
+        temp_reading_data = ioread32(iomem_addr_csi2rxss + 4);
+    }
+
+	// Record
+	// lock_irq_status_recording_mutex(1);
+	// record_next_sec_command(iomem_addr_csi2rxss, 0, 32, addr, temp_reading_data);
+	// lock_irq_status_recording_mutex(0);
+	// lock_recording_mutex(0);
+
+    return temp_reading_data;
 }
 
 static inline void xcsi2rxss_write(struct xcsi2rxss_core *xcsi2rxss,
 					u32 addr,
 					u32 value)
 {
-	iowrite32(value, xcsi2rxss->iomem + addr);
+	// Replay
+	if (secure_cam_is_in_tcs_mode)
+	{
+		check_and_switch_to_next_presets_4_csi2rxss();
+		u32 data_to_return = 0;
+		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_WRITE, 32, addr, value, &data_to_return);
+		if (replay_result == -1)
+			printk("[Myles]%s: replay error.\n", __func__);
+
+		return;
+	}
+
+	// Record
+	// lock_recording_mutex(1);
+	// lock_irq_status_recording_mutex(1);
+	// record_next_sec_command(iomem_addr_csi2rxss, 1, 32, addr, value);
+	// lock_irq_status_recording_mutex(0);
+
+    u32 done_indicator = 32;
+
+	iowrite32(addr, iomem_addr_csi2rxss + 8);
+	iowrite32(value, iomem_addr_csi2rxss + 12);
+	iowrite32(32, iomem_addr_csi2rxss + 16);
+
+    while (done_indicator == 32)
+    {
+        done_indicator = ioread32(iomem_addr_csi2rxss + 16);
+    }
+
+	// unlock for recording
+	// lock_recording_mutex(0);
 }
 
 static inline void xcsi2rxss_clr(struct xcsi2rxss_core *xcsi2rxss,
@@ -807,82 +914,100 @@ static void xcsi2rxss_stop_stream(struct xcsi2rxss_state *xcsi2rxss)
  */
 static irqreturn_t xcsi2rxss_irq_handler(int irq, void *dev_id)
 {
-	struct xcsi2rxss_state *state = (struct xcsi2rxss_state *)dev_id;
-	struct xcsi2rxss_core *core = &state->core;
-	u32 status;
+	// struct xcsi2rxss_state *state = (struct xcsi2rxss_state *)dev_id;
+	// struct xcsi2rxss_core *core = &state->core;
+	// u32 status;
 
-	status = xcsi2rxss_read(core, XCSI_ISR_OFFSET) & XCSI_INTR_MASK;
-	dev_dbg(core->dev, "interrupt status = 0x%08x\n", status);
+	// status = xcsi2rxss_read(core, XCSI_ISR_OFFSET) & XCSI_INTR_MASK;
+	// dev_dbg(core->dev, "interrupt status = 0x%08x\n", status);
 
-	if (!status)
-		return IRQ_NONE;
+	// if (!status)
+	// {
+	// 	printk("[Myles]%s: IRQ_NONE.\n", __func__);
+	// 	return IRQ_NONE;
+	// }
 
-	if (status & XCSI_ISR_SPFIFONE_MASK) {
+	// // Myles: commented out for better record & replay
+	// // if (status & XCSI_ISR_SPFIFONE_MASK) {
 
-		memset(&state->event, 0, sizeof(state->event));
+	// // 	printk("[Myles]%s: XCSI_ISR_SPFIFONE_MASK.\n", __func__);
 
-		state->event.type = V4L2_EVENT_XLNXCSIRX_SPKT;
+	// // 	memset(&state->event, 0, sizeof(state->event));
 
-		*((u32 *)(&state->event.u.data)) =
-			xcsi2rxss_read(core, XCSI_SPKTR_OFFSET);
+	// // 	state->event.type = V4L2_EVENT_XLNXCSIRX_SPKT;
 
-		v4l2_subdev_notify_event(&state->subdev, &state->event);
-	}
+	// // 	*((u32 *)(&state->event.u.data)) =
+	// // 		xcsi2rxss_read(core, XCSI_SPKTR_OFFSET);
 
-	if (status & XCSI_ISR_SPFIFOF_MASK) {
-		dev_alert(core->dev, "Short packet FIFO overflowed\n");
+	// // 	v4l2_subdev_notify_event(&state->subdev, &state->event);
+	// // }
 
-		memset(&state->event, 0, sizeof(state->event));
+	// // if (status & XCSI_ISR_SPFIFOF_MASK) {
 
-		state->event.type = V4L2_EVENT_XLNXCSIRX_SPKT_OVF;
+	// // 	printk("[Myles]%s: XCSI_ISR_SPFIFOF_MASK.\n", __func__);
 
-		v4l2_subdev_notify_event(&state->subdev, &state->event);
-	}
+	// // 	dev_alert(core->dev, "Short packet FIFO overflowed\n");
 
-	if (status & XCSI_ISR_SLBF_MASK) {
-		dev_alert(core->dev, "Stream Line Buffer Full!\n");
-		if (core->rst_gpio) {
-			gpiod_set_value(core->rst_gpio, 1);
-			/* minimum 40 dphy_clk_200M cycles */
-			ndelay(250);
-			gpiod_set_value(core->rst_gpio, 0);
-		}
+	// // 	memset(&state->event, 0, sizeof(state->event));
 
-		xcsi2rxss_stop_stream(state);
+	// // 	state->event.type = V4L2_EVENT_XLNXCSIRX_SPKT_OVF;
 
-		memset(&state->event, 0, sizeof(state->event));
+	// // 	v4l2_subdev_notify_event(&state->subdev, &state->event);
+	// // }
 
-		state->event.type = V4L2_EVENT_XLNXCSIRX_SLBF;
+	// // if (status & XCSI_ISR_SLBF_MASK) {
 
-		v4l2_subdev_notify_event(&state->subdev, &state->event);
-	}
+	// // 	printk("[Myles]%s: XCSI_ISR_SLBF_MASK.\n", __func__);
 
-	if (status & XCSI_ISR_ALLINTR_MASK) {
-		unsigned int i;
+	// // 	dev_alert(core->dev, "Stream Line Buffer Full!\n");
+	// // 	if (core->rst_gpio) {
+	// // 		gpiod_set_value(core->rst_gpio, 1);
+	// // 		/* minimum 40 dphy_clk_200M cycles */
+	// // 		ndelay(250);
+	// // 		gpiod_set_value(core->rst_gpio, 0);
+	// // 	}
 
-		for (i = 0; i < XMIPICSISS_NUM_EVENTS; i++) {
-			if (!(status & core->events[i].mask))
-				continue;
-			core->events[i].counter++;
-			dev_dbg(core->dev, "%s: %d\n", core->events[i].name,
-					core->events[i].counter);
-		}
+	// // 	xcsi2rxss_stop_stream(state);
 
-		if (status & XCSI_ISR_VCX_MASK && core->en_vcx) {
-			u32 vcxstatus;
+	// // 	memset(&state->event, 0, sizeof(state->event));
 
-			vcxstatus = xcsi2rxss_read(core, XCSI_VCXR_OFFSET);
-			vcxstatus &= XCSI_VCXR_MASK;
-			for (i = 0; i < XMIPICSISS_VCX_NUM_EVENTS; i++) {
-				if (!(vcxstatus & core->vcx_events[i].mask))
-					continue;
-				core->vcx_events[i].counter++;
-			}
-			xcsi2rxss_write(core, XCSI_VCXR_OFFSET, vcxstatus);
-		}
-	}
+	// // 	state->event.type = V4L2_EVENT_XLNXCSIRX_SLBF;
 
-	xcsi2rxss_write(core, XCSI_ISR_OFFSET, status);
+	// // 	v4l2_subdev_notify_event(&state->subdev, &state->event);
+	// // }
+
+	// // if (status & XCSI_ISR_ALLINTR_MASK) {
+
+	// // 	printk("[Myles]%s: XCSI_ISR_ALLINTR_MASK.\n", __func__);
+
+	// // 	unsigned int i;
+
+	// // 	for (i = 0; i < XMIPICSISS_NUM_EVENTS; i++) {
+	// // 		if (!(status & core->events[i].mask))
+	// // 			continue;
+	// // 		core->events[i].counter++;
+	// // 		dev_dbg(core->dev, "%s: %d\n", core->events[i].name,
+	// // 				core->events[i].counter);
+	// // 	}
+
+	// // 	if (status & XCSI_ISR_VCX_MASK && core->en_vcx) {
+
+	// // 		printk("[Myles]%s: XCSI_ISR_VCX_MASK && core->en_vcx.\n", __func__);
+
+	// // 		u32 vcxstatus;
+
+	// // 		vcxstatus = xcsi2rxss_read(core, XCSI_VCXR_OFFSET);
+	// // 		vcxstatus &= XCSI_VCXR_MASK;
+	// // 		for (i = 0; i < XMIPICSISS_VCX_NUM_EVENTS; i++) {
+	// // 			if (!(vcxstatus & core->vcx_events[i].mask))
+	// // 				continue;
+	// // 			core->vcx_events[i].counter++;
+	// // 		}
+	// // 		xcsi2rxss_write(core, XCSI_VCXR_OFFSET, vcxstatus);
+	// // 	}
+	// // }
+
+	// xcsi2rxss_write(core, XCSI_ISR_OFFSET, status);
 
 	return IRQ_HANDLED;
 }
@@ -1269,6 +1394,8 @@ static int xcsi2rxss_s_stream(struct v4l2_subdev *sd, int enable)
 		ret = -EBUSY;
 		goto unlock;
 	}
+
+	printk("[Myles]%s: enable = %d, streaming = %d\n", __func__, enable, xcsi2rxss->streaming);
 
 	if (enable) {
 		if (!xcsi2rxss->streaming) {
@@ -1808,15 +1935,15 @@ static int xcsi2rxss_parse_of(struct xcsi2rxss_state *xcsi2rxss)
 	xcsi2rxss->npads = nports;
 
 	/*Register interrupt handler */
-	core->irq = irq_of_parse_and_map(node, 0);
+	// core->irq = irq_of_parse_and_map(node, 0);
 
-	ret = devm_request_irq(core->dev, core->irq, xcsi2rxss_irq_handler,
-				IRQF_SHARED, "xilinx-csi2rxss", xcsi2rxss);
-	if (ret) {
-		dev_err(core->dev, "Err = %d Interrupt handler reg failed!\n",
-				ret);
-		return ret;
-	}
+	// ret = devm_request_irq(core->dev, core->irq, xcsi2rxss_irq_handler,
+	// 			IRQF_SHARED, "xilinx-csi2rxss", xcsi2rxss);
+	// if (ret) {
+	// 	dev_err(core->dev, "Err = %d Interrupt handler reg failed!\n",
+	// 			ret);
+	// 	return ret;
+	// }
 
 	/* Reset GPIO */
 	core->rst_gpio = devm_gpiod_get_optional(core->dev, "reset",
@@ -1832,6 +1959,22 @@ static int xcsi2rxss_parse_of(struct xcsi2rxss_state *xcsi2rxss)
 
 static int xcsi2rxss_probe(struct platform_device *pdev)
 {
+	printk("[Myles]%s: xcsi2rxss probing has started...\n", __func__);
+
+	// Myles: record & replay init
+	// init_recording();
+	init_replaying();
+
+    global_pdev = pdev;
+
+    // Myles: do secure IO re-config
+    if ((iomem_addr_csi2rxss == 0) || (iomem_addr_csi2rxss == NULL))
+    {
+        global_pdev->dev.id = 666;
+        iomem_addr_csi2rxss = dma_alloc_coherent(&global_pdev->dev, 4096, &dma_handle_4_csi2rxss, GFP_KERNEL | GFP_DMA);
+        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75000000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_csi2rxss: 0x%016lx...\n", __func__, iomem_addr_csi2rxss, iomem_addr_csi2rxss == NULL, virt_to_phys(iomem_addr_csi2rxss), dma_handle_4_csi2rxss);
+    }
+
 	struct v4l2_subdev *subdev;
 	struct xcsi2rxss_state *xcsi2rxss;
 	struct resource *res;
@@ -1911,10 +2054,15 @@ static int xcsi2rxss_probe(struct platform_device *pdev)
 	 */
 
 	if (xcsi2rxss->core.rst_gpio) {
+		printk("[Myles]%s: performing hard reset of xcsi2rxss...\n", __func__);
 		gpiod_set_value_cansleep(xcsi2rxss->core.rst_gpio, 1);
 		/* minimum of 40 dphy_clk_200M cycles */
 		usleep_range(1, 2);
 		gpiod_set_value_cansleep(xcsi2rxss->core.rst_gpio, 0);
+	} 
+	else
+	{
+		printk("[Myles]%s: not performing hard reset of xcsi2rxss...\n", __func__);
 	}
 
 	xcsi2rxss_reset(&xcsi2rxss->core);
@@ -2045,6 +2193,9 @@ static int xcsi2rxss_probe(struct platform_device *pdev)
 	/* default states for streaming and suspend */
 	xcsi2rxss->streaming = false;
 	xcsi2rxss->suspended = false;
+
+    myles_printk("[myles]xcsi2rxss_probe: xcsi2rxss is probed.\n");
+
 	return 0;
 
 error:

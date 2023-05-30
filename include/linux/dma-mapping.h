@@ -637,9 +637,23 @@ int
 dma_common_get_sgtable(struct device *dev, struct sg_table *sgt, void *cpu_addr,
 		dma_addr_t dma_addr, size_t size, unsigned long attrs);
 
+
+// Myles: trick for comforting both imx274 and iic-controller
+// static u64 cached_iic_virt_addr = 0;
 static inline void *dma_alloc_coherent(struct device *dev, size_t size,
 		dma_addr_t *dma_handle, gfp_t gfp)
 {
+	// if (dev->id == 667)
+	// {
+	// 	if (!cached_iic_virt_addr)
+	// 	{
+	// 		cached_iic_virt_addr = dma_alloc_attrs(dev, size, dma_handle, gfp,
+	// 			(gfp & __GFP_NOWARN) ? DMA_ATTR_NO_WARN : 0);
+	// 		printk("[Myles]%s: now we have cached imx-iic addr: 0x%016llx.\n", __func__, cached_iic_virt_addr);
+	// 	}
+	// 	printk("[Myles]%s: going to return imx-iic addr: 0x%016llx.\n", __func__, cached_iic_virt_addr);
+	// 	return cached_iic_virt_addr;
+	// }
 
 	return dma_alloc_attrs(dev, size, dma_handle, gfp,
 			(gfp & __GFP_NOWARN) ? DMA_ATTR_NO_WARN : 0);

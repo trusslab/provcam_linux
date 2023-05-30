@@ -436,6 +436,8 @@ static int xhls_probe(struct platform_device *pdev)
 
 	dev_info(xhls->xvip.dev, "device %s found\n", xhls->compatible);
 
+    myles_printk("[myles]xhls_probe: xhls is probed.\n");
+
 	return 0;
 
 error:

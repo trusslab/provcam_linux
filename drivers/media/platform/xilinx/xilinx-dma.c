@@ -168,11 +168,17 @@ static int xvip_pipeline_validate(struct xvip_pipeline *pipe,
 
 	media_graph_walk_start(&graph, entity);
 
+    myles_printk("[myles]%s: media_graph_walk started, %s", __func__, entity->name);
+
 	while ((entity = media_graph_walk_next(&graph))) {
 		struct xvip_dma *dma;
 
+        printk(" -> %s", entity->name);
+
 		if (entity->function != MEDIA_ENT_F_IO_V4L)
 			continue;
+
+        printk("(MEDIA_ENT_F_IO_V4L)");
 
 		dma = to_xvip_dma(media_entity_to_video_device(entity));
 
@@ -181,6 +187,8 @@ static int xvip_pipeline_validate(struct xvip_pipeline *pipe,
 		else
 			num_inputs++;
 	}
+
+    printk(".\n");
 
 	mutex_unlock(&mdev->graph_mutex);
 
@@ -1425,6 +1433,8 @@ int xvip_dma_init(struct xvip_composite_device *xdev, struct xvip_dma *dma,
 		dev_err(dma->xdev->dev, "failed to register video device\n");
 		goto error;
 	}
+
+    myles_printk("[myles]xvip_dma_init: xvip_dma is probed.\n");
 
 	return 0;
 

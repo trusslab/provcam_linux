@@ -417,6 +417,8 @@ static int xsw_probe(struct platform_device *pdev)
 		goto error;
 	}
 
+    myles_printk("[myles]xsw_probe: xsw is probed.\n");
+
 	return 0;
 
 error:

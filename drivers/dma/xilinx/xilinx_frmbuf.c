@@ -545,34 +545,225 @@ static const struct of_device_id xilinx_frmbuf_of_ids[] = {
 	{/* end of list */}
 };
 
+// Myles secure IO
+#include <linux/dma-mapping.h>
+dma_addr_t dma_handle_4_fbwriter;
+u64 iomem_addr_fbwriter = 0;
+
+// TCS driver
+#include <linux/secure-cam.h>
+
+// record related
+#include <linux/secure-cam-rec.h>
+
+// replay related
+#include "xilinx_frmbuf-presets.h"
+#include <linux/secure-cam-rep.h>
+u8 fbwriter_replay_status = 0;	// 0: init; 1: start; 2: stop; other: invalid
+
 /******************************PROTOTYPES*************************************/
 #define to_xilinx_chan(chan) \
 	container_of(chan, struct xilinx_frmbuf_chan, common)
 #define to_dma_tx_descriptor(tx) \
 	container_of(tx, struct xilinx_frmbuf_tx_descriptor, async_tx)
 
+void check_and_switch_to_next_presets_4_fbwriter(void)
+{
+	u8 previous_replay_status = fbwriter_replay_status - 1;
+	while (previous_replay_status != fbwriter_replay_status)
+	{
+		previous_replay_status = fbwriter_replay_status;
+		switch(fbwriter_replay_status)
+		{
+			case 0:
+				if (check_and_switch_current_replay_preset(fbwriter_init_preset_num_of_commands, fbwriter_init_preset_cmd_type, 
+						fbwriter_init_preset_size, fbwriter_init_preset_addr, fbwriter_init_preset_data))
+				{
+					++fbwriter_replay_status;
+					printk("[Myles]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
+				}
+				break;
+			case 1:
+				if (check_and_switch_current_replay_preset(fbwriter_start_preset_num_of_commands, fbwriter_start_preset_cmd_type, 
+						fbwriter_start_preset_size, fbwriter_start_preset_addr, fbwriter_start_preset_data))
+				{
+					++fbwriter_replay_status;
+					printk("[Myles]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
+				}
+				break;
+			case 2:
+				if (check_and_switch_current_replay_preset(fbwriter_stop_preset_num_of_commands, fbwriter_stop_preset_cmd_type, 
+						fbwriter_stop_preset_size, fbwriter_stop_preset_addr, fbwriter_stop_preset_data))
+				{
+					++fbwriter_replay_status;
+					printk("[Myles]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
+				}
+				break;
+		}
+	}
+
+	// printk("[Myles]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
+}
+
+static inline u32 frmbuf_read_d(struct xilinx_frmbuf_chan *chan, u32 reg)
+{
+    // replay
+	if (secure_cam_is_in_tcs_mode)
+	{
+		check_and_switch_to_next_presets_4_fbwriter();
+		u32 data_to_return = 0;
+		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_READ, 32, reg, 0, &data_to_return);
+		if (replay_result == -1)
+		{
+			printk("[Myles]%s: replay error at counter: %d (status: %d),\
+				recorded type: %d, size: %d, addr: 0x%08x, val: 0x%08x;\
+				requested type: %d, size: addr: 0x%08x, val: 0x%08x.\n", 
+				__func__, replay_counter, fbwriter_replay_status,
+				current_replay_preset_cmd_type[replay_counter-1], 
+				current_replay_preset_size[replay_counter-1], 
+				current_replay_preset_addr[replay_counter-1],
+				current_replay_preset_data[replay_counter-1],
+				0, 32, reg, 0);
+		}
+		// else
+		// {
+		// 	printk("[Myles]%s: replay at counter: %d (status: %d), \
+		// 		type: %d, size: %d, addr: 0x%08x, val: 0x%08x.\n", 
+		// 		__func__, replay_counter-1, fbwriter_replay_status, 
+		// 		current_replay_preset_cmd_type[replay_counter-1], 
+		// 		current_replay_preset_size[replay_counter-1], 
+		// 		current_replay_preset_addr[replay_counter-1],
+		// 		current_replay_preset_data[replay_counter-1]);
+		// }
+
+		return data_to_return;
+	}
+
+	// lock for recording
+	// lock_recording_mutex(1);
+
+    iowrite32(reg, iomem_addr_fbwriter);
+    iowrite32(32, iomem_addr_fbwriter + 4);
+    
+    u32 temp_reading_data = 32;
+    while (temp_reading_data == 32)
+    {
+        temp_reading_data = ioread32(iomem_addr_fbwriter + 4);
+    }
+    // printk("[Myles]%s: reading from addr: 0x%08x, data: 0x%08x.\n", __func__, reg, temp_reading_data);
+   
+	// Record
+	// lock_irq_status_recording_mutex(1);
+	// record_next_sec_command(iomem_addr_fbwriter, SEC_REPLAY_TYPE_READ, 32, reg, temp_reading_data);
+	// lock_irq_status_recording_mutex(0);
+	// lock_recording_mutex(0);
+    
+	return temp_reading_data;
+}
+
 static inline u32 frmbuf_read(struct xilinx_frmbuf_chan *chan, u32 reg)
 {
-	return ioread32(chan->xdev->regs + reg);
+	return frmbuf_read_d(chan, reg);
+}
+
+static inline void frmbuf_write_d(struct xilinx_frmbuf_chan *chan, u32 reg,
+				u32 value)
+{
+    // Replay
+	if (secure_cam_is_in_tcs_mode)
+	{
+		check_and_switch_to_next_presets_4_fbwriter();
+		u32 data_to_return = 0;
+		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_WRITE, 32, reg, value, &data_to_return);
+		if (replay_result == -1)
+		{
+			printk("[Myles]%s: replay error at counter: %d (status: %d),\
+				recorded type: %d, size: %d, addr: 0x%08x, val: 0x%08x;\
+				requested type: %d, size: addr: 0x%08x, val: 0x%08x.\n", 
+				__func__, replay_counter, fbwriter_replay_status,
+				current_replay_preset_cmd_type[replay_counter-1], 
+				current_replay_preset_size[replay_counter-1], 
+				current_replay_preset_addr[replay_counter-1],
+				current_replay_preset_data[replay_counter-1],
+				1, 32, reg, value);
+		}
+		// else
+		// {
+		// 	printk("[Myles]%s: replay at counter: %d (status: %d), \
+		// 		type: %d, size: %d, addr: 0x%08x, val: 0x%08x.\n", 
+		// 		__func__, replay_counter-1, fbwriter_replay_status, 
+		// 		current_replay_preset_cmd_type[replay_counter-1], 
+		// 		current_replay_preset_size[replay_counter-1], 
+		// 		current_replay_preset_addr[replay_counter-1],
+		// 		current_replay_preset_data[replay_counter-1]);
+		// }
+
+		return;
+	}
+
+	// Record
+	// lock_recording_mutex(1);
+	// lock_irq_status_recording_mutex(1);
+	// record_next_sec_command(iomem_addr_fbwriter, SEC_REPLAY_TYPE_WRITE, 32, reg, value);
+	// lock_irq_status_recording_mutex(0);
+
+    u32 done_indicator = 32;
+
+	iowrite32(reg, iomem_addr_fbwriter + 8);
+	iowrite32(value, iomem_addr_fbwriter + 12);
+	iowrite32(32, iomem_addr_fbwriter + 16);
+
+    while (done_indicator == 32)
+    {
+        done_indicator = ioread32(iomem_addr_fbwriter + 16);
+    }
+
+    // printk("[Myles]%s: writing to addr: 0x%08x, data: 0x%08x.\n", __func__, reg, value);
+
+	// unlock for recording
+	// lock_recording_mutex(0);
 }
 
 static inline void frmbuf_write(struct xilinx_frmbuf_chan *chan, u32 reg,
 				u32 value)
 {
-	iowrite32(value, chan->xdev->regs + reg);
+	frmbuf_write_d(chan, reg, value);
+}
+
+static inline void frmbuf_writeq_d(struct xilinx_frmbuf_chan *chan, u32 reg,
+				 u64 value)
+{
+	frmbuf_write_d(chan, reg, lower_32_bits(value));
+	frmbuf_write_d(chan, reg + 4, upper_32_bits(value));
+
+    // printk("[Myles]%s: (64)writing to addr: 0x%08x, data: 0x%016llx.\n", __func__, reg, value);
 }
 
 static inline void frmbuf_writeq(struct xilinx_frmbuf_chan *chan, u32 reg,
 				 u64 value)
 {
-	iowrite32(lower_32_bits(value), chan->xdev->regs + reg);
-	iowrite32(upper_32_bits(value), chan->xdev->regs + reg + 4);
+	frmbuf_write(chan, reg, lower_32_bits(value));
+	frmbuf_write(chan, reg + 4, upper_32_bits(value));
+
+    // printk("[Myles]%s: (64)writing to addr: 0x%08x, data: 0x%016llx.\n", __func__, reg, value);
+}
+
+static void writeq_addr_d(struct xilinx_frmbuf_chan *chan, u32 reg,
+			dma_addr_t addr)
+{
+	frmbuf_writeq_d(chan, reg, (u64)addr);
 }
 
 static void writeq_addr(struct xilinx_frmbuf_chan *chan, u32 reg,
 			dma_addr_t addr)
 {
 	frmbuf_writeq(chan, reg, (u64)addr);
+}
+
+static void write_addr_d(struct xilinx_frmbuf_chan *chan, u32 reg,
+		       dma_addr_t addr)
+{
+	frmbuf_write_d(chan, reg, addr);
 }
 
 static void write_addr(struct xilinx_frmbuf_chan *chan, u32 reg,
@@ -585,6 +776,12 @@ static inline void frmbuf_clr(struct xilinx_frmbuf_chan *chan, u32 reg,
 			      u32 clr)
 {
 	frmbuf_write(chan, reg, frmbuf_read(chan, reg) & ~clr);
+}
+
+static inline void frmbuf_set_d(struct xilinx_frmbuf_chan *chan, u32 reg,
+			      u32 set)
+{
+	frmbuf_write_d(chan, reg, frmbuf_read_d(chan, reg) | set);
 }
 
 static inline void frmbuf_set(struct xilinx_frmbuf_chan *chan, u32 reg,
@@ -687,6 +884,7 @@ static int frmbuf_verify_format(struct dma_chan *chan, u32 fourcc, u32 type)
 			return -EINVAL;
 
 		xil_chan->vid_fmt = &xilinx_frmbuf_formats[i];
+		// printk("[Myles]%s: format is decided to be %s.\n", __func__, xil_chan->vid_fmt->dts_name);
 		return 0;
 	}
 	return -EINVAL;
@@ -948,6 +1146,8 @@ static void xilinx_frmbuf_free_descriptors(struct xilinx_frmbuf_chan *chan)
  */
 static void xilinx_frmbuf_free_chan_resources(struct dma_chan *dchan)
 {
+	printk("[Myles]%s: called.\n", __func__);
+
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(dchan);
 
 	xilinx_frmbuf_free_descriptors(chan);
@@ -974,6 +1174,9 @@ static void xilinx_frmbuf_chan_desc_cleanup(struct xilinx_frmbuf_chan *chan)
 		callback = desc->async_tx.callback;
 		callback_param = desc->async_tx.callback_param;
 		if (callback) {
+
+			// printk("[Myles]%s: calling callback: %pF at address: %p\n", __func__, callback, callback);
+
 			spin_unlock_irqrestore(&chan->lock, flags);
 			callback(callback_param);
 			spin_lock_irqsave(&chan->lock, flags);
@@ -1006,6 +1209,7 @@ static void xilinx_frmbuf_do_tasklet(unsigned long data)
  */
 static int xilinx_frmbuf_alloc_chan_resources(struct dma_chan *dchan)
 {
+	printk("[Myles]%s: called.\n", __func__);
 	dma_cookie_init(dchan);
 
 	return 0;
@@ -1023,6 +1227,8 @@ static enum dma_status xilinx_frmbuf_tx_status(struct dma_chan *dchan,
 					       dma_cookie_t cookie,
 					       struct dma_tx_state *txstate)
 {
+	printk("[Myles]%s: called.\n", __func__);
+
 	return dma_cookie_status(dchan, cookie, txstate);
 }
 
@@ -1041,12 +1247,18 @@ static void xilinx_frmbuf_halt(struct xilinx_frmbuf_chan *chan)
 /**
  * xilinx_frmbuf_start - Start dma channel
  * @chan: Driver specific dma channel
+ * @io_option: need io or not
  */
-static void xilinx_frmbuf_start(struct xilinx_frmbuf_chan *chan)
+static void xilinx_frmbuf_start(struct xilinx_frmbuf_chan *chan, u8 io_option)
 {
-	frmbuf_set(chan, XILINX_FRMBUF_CTRL_OFFSET,
-			XILINX_FRMBUF_CTRL_AP_START |
-			chan->mode);
+	// frmbuf_set(chan, XILINX_FRMBUF_CTRL_OFFSET,
+	// 		XILINX_FRMBUF_CTRL_AP_START |
+	// 		chan->mode);
+	// printk("[Myles]%s: frmbuf is starting on mode: %d.\n", __func__, chan->mode);
+	if (io_option && (!secure_cam_is_in_tcs_mode))
+		frmbuf_set_d(chan, XILINX_FRMBUF_CTRL_OFFSET,
+				XILINX_FRMBUF_CTRL_AP_START |
+				chan->mode);
 	chan->idle = false;
 }
 
@@ -1065,9 +1277,9 @@ static void xilinx_frmbuf_complete_descriptor(struct xilinx_frmbuf_chan *chan)
 	 * In case of frame buffer write, read the fid register
 	 * and associate it with descriptor
 	 */
-	if (chan->direction == DMA_DEV_TO_MEM && chan->hw_fid)
-		desc->fid = frmbuf_read(chan, XILINX_FRMBUF_FID_OFFSET) &
-			    XILINX_FRMBUF_FID_MASK;
+	// if (chan->direction == DMA_DEV_TO_MEM && chan->hw_fid)
+	// 	desc->fid = frmbuf_read(chan, XILINX_FRMBUF_FID_OFFSET) &
+	// 		    XILINX_FRMBUF_FID_MASK;
 
 	dma_cookie_complete(&desc->async_tx);
 	list_add_tail(&desc->node, &chan->done_list);
@@ -1076,8 +1288,9 @@ static void xilinx_frmbuf_complete_descriptor(struct xilinx_frmbuf_chan *chan)
 /**
  * xilinx_frmbuf_start_transfer - Starts frmbuf transfer
  * @chan: Driver specific channel struct pointer
+ * @io_option: need io or nots
  */
-static void xilinx_frmbuf_start_transfer(struct xilinx_frmbuf_chan *chan)
+static void xilinx_frmbuf_start_transfer(struct xilinx_frmbuf_chan *chan, u8 io_option)
 {
 	struct xilinx_frmbuf_tx_descriptor *desc;
 
@@ -1096,37 +1309,74 @@ static void xilinx_frmbuf_start_transfer(struct xilinx_frmbuf_chan *chan)
 				struct xilinx_frmbuf_tx_descriptor,
 				node);
 
-	if (desc->earlycb == EARLY_CALLBACK_START_DESC) {
-		dma_async_tx_callback callback;
-		void *callback_param;
+	// if (desc->earlycb == EARLY_CALLBACK_START_DESC) {
+	// 	dma_async_tx_callback callback;
+	// 	void *callback_param;
 
-		callback = desc->async_tx.callback;
-		callback_param = desc->async_tx.callback_param;
-		if (callback) {
-			callback(callback_param);
-			desc->async_tx.callback = NULL;
-			chan->active_desc = desc;
-		}
-	}
+	// 	callback = desc->async_tx.callback;
+	// 	callback_param = desc->async_tx.callback_param;
+	// 	if (callback) {
+	// 		callback(callback_param);
+	// 		desc->async_tx.callback = NULL;
+	// 		chan->active_desc = desc;
+	// 	}
+	// }
 
 	/* Start the transfer */
-	chan->write_addr(chan, XILINX_FRMBUF_ADDR_OFFSET,
-			 desc->hw.luma_plane_addr);
-	chan->write_addr(chan, XILINX_FRMBUF_ADDR2_OFFSET,
-			 desc->hw.chroma_plane_addr);
+	if (io_option && (!secure_cam_is_in_tcs_mode))
+	{
+		// chan->write_addr(chan, XILINX_FRMBUF_ADDR_OFFSET,
+		// 		 desc->hw.luma_plane_addr);
+		// chan->write_addr(chan, XILINX_FRMBUF_ADDR2_OFFSET,
+		// 		 desc->hw.chroma_plane_addr);
+		if (chan->write_addr == write_addr)
+		{
+			write_addr_d(chan, XILINX_FRMBUF_ADDR_OFFSET,
+					desc->hw.luma_plane_addr);
+			write_addr_d(chan, XILINX_FRMBUF_ADDR2_OFFSET,
+					desc->hw.chroma_plane_addr);
+		} else if (chan->write_addr == writeq_addr)
+		{
+			writeq_addr_d(chan, XILINX_FRMBUF_ADDR_OFFSET,
+					desc->hw.luma_plane_addr);
+			writeq_addr_d(chan, XILINX_FRMBUF_ADDR2_OFFSET,
+					desc->hw.chroma_plane_addr);
+		} else 
+		{
+			printk("[Myles]%s: DEBUGGING ERROR...\n", __func__);
+			chan->write_addr(chan, XILINX_FRMBUF_ADDR_OFFSET,
+					desc->hw.luma_plane_addr);
+			chan->write_addr(chan, XILINX_FRMBUF_ADDR2_OFFSET,
+					desc->hw.chroma_plane_addr);
+		}
 
-	/* HW expects these parameters to be same for one transaction */
-	frmbuf_write(chan, XILINX_FRMBUF_WIDTH_OFFSET, desc->hw.hsize);
-	frmbuf_write(chan, XILINX_FRMBUF_STRIDE_OFFSET, desc->hw.stride);
-	frmbuf_write(chan, XILINX_FRMBUF_HEIGHT_OFFSET, desc->hw.vsize);
-	frmbuf_write(chan, XILINX_FRMBUF_FMT_OFFSET, chan->vid_fmt->id);
+
+		/* HW expects these parameters to be same for one transaction */
+		// frmbuf_write(chan, XILINX_FRMBUF_WIDTH_OFFSET, desc->hw.hsize);
+		frmbuf_write_d(chan, XILINX_FRMBUF_WIDTH_OFFSET, desc->hw.hsize);
+		// frmbuf_write(chan, XILINX_FRMBUF_STRIDE_OFFSET, desc->hw.stride);
+		frmbuf_write_d(chan, XILINX_FRMBUF_STRIDE_OFFSET, desc->hw.stride);
+		// frmbuf_write(chan, XILINX_FRMBUF_HEIGHT_OFFSET, desc->hw.vsize);
+		frmbuf_write_d(chan, XILINX_FRMBUF_HEIGHT_OFFSET, desc->hw.vsize);
+		// frmbuf_write(chan, XILINX_FRMBUF_FMT_OFFSET, chan->vid_fmt->id);
+		frmbuf_write_d(chan, XILINX_FRMBUF_FMT_OFFSET, chan->vid_fmt->id);
+	}
 
 	/* If it is framebuffer read IP set the FID */
-	if (chan->direction == DMA_MEM_TO_DEV && chan->hw_fid)
-		frmbuf_write(chan, XILINX_FRMBUF_FID_OFFSET, desc->fid);
+	// if (chan->direction == DMA_MEM_TO_DEV && chan->hw_fid)
+	// {
+	// 	frmbuf_write_d(chan, XILINX_FRMBUF_FID_OFFSET, desc->fid);
+	// 	printk("[Myles]%s: desc->fid: %d.\n", __func__, desc->fid);
+	// }
+		// frmbuf_write(chan, XILINX_FRMBUF_FID_OFFSET, desc->fid);
+
+    // if (chan->direction == DMA_DEV_TO_MEM) {
+    //     myles_printk("[myles]%s: luma_plane_addr: 0x%lx, chroma_plane_addr: 0x%lx, vsize: %d, hsize: %d, stride: %d, format_id: %d.\n", \
+    //                     __func__, desc->hw.luma_plane_addr, desc->hw.chroma_plane_addr, desc->hw.vsize, desc->hw.hsize, desc->hw.stride, chan->vid_fmt->id);
+    // }
 
 	/* Start the hardware */
-	xilinx_frmbuf_start(chan);
+	xilinx_frmbuf_start(chan, io_option);
 	list_del(&desc->node);
 
 	/* No staging descriptor required when auto restart is disabled */
@@ -1142,11 +1392,12 @@ static void xilinx_frmbuf_start_transfer(struct xilinx_frmbuf_chan *chan)
  */
 static void xilinx_frmbuf_issue_pending(struct dma_chan *dchan)
 {
+
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(dchan);
 	unsigned long flags;
 
 	spin_lock_irqsave(&chan->lock, flags);
-	xilinx_frmbuf_start_transfer(chan);
+	xilinx_frmbuf_start_transfer(chan, 1);
 	spin_unlock_irqrestore(&chan->lock, flags);
 }
 
@@ -1182,42 +1433,67 @@ static void xilinx_frmbuf_chan_reset(struct xilinx_frmbuf_chan *chan)
  */
 static irqreturn_t xilinx_frmbuf_irq_handler(int irq, void *data)
 {
+
 	struct xilinx_frmbuf_chan *chan = data;
 	u32 status;
 	dma_async_tx_callback callback = NULL;
 	void *callback_param;
 	struct xilinx_frmbuf_tx_descriptor *desc;
 
-	status = frmbuf_read(chan, XILINX_FRMBUF_ISR_OFFSET);
-	if (!(status & XILINX_FRMBUF_ISR_ALL_IRQ_MASK))
-		return IRQ_NONE;
+	// // status = frmbuf_read(chan, XILINX_FRMBUF_ISR_OFFSET);
+	// status = frmbuf_read_d(chan, XILINX_FRMBUF_ISR_OFFSET);
+	// if (!(status & XILINX_FRMBUF_ISR_ALL_IRQ_MASK))
+	// 	return IRQ_NONE;
 
-	frmbuf_write(chan, XILINX_FRMBUF_ISR_OFFSET,
-		     status & XILINX_FRMBUF_ISR_ALL_IRQ_MASK);
+	// // frmbuf_write(chan, XILINX_FRMBUF_ISR_OFFSET,
+	// // 	     status & XILINX_FRMBUF_ISR_ALL_IRQ_MASK);
+	// frmbuf_write_d(chan, XILINX_FRMBUF_ISR_OFFSET,
+	// 	     status & XILINX_FRMBUF_ISR_ALL_IRQ_MASK);
 
-	/* Check if callback function needs to be called early */
-	desc = chan->staged_desc;
-	if (desc && desc->earlycb == EARLY_CALLBACK) {
-		callback = desc->async_tx.callback;
-		callback_param = desc->async_tx.callback_param;
-		if (callback) {
-			callback(callback_param);
-			desc->async_tx.callback = NULL;
-		}
+	// /* Check if callback function needs to be called early */
+	// desc = chan->staged_desc;
+	// if (desc && desc->earlycb == EARLY_CALLBACK) {
+	// 	// printk("[Myles]%s: EARLY_CALLBACK...\n", __func__);
+	// 	callback = desc->async_tx.callback;
+	// 	callback_param = desc->async_tx.callback_param;
+	// 	if (callback) {
+	// 		callback(callback_param);
+	// 		desc->async_tx.callback = NULL;
+	// 	}
+	// }
+
+	// if (status & XILINX_FRMBUF_ISR_AP_READY_IRQ) {
+	// 	// printk("[Myles]%s: XILINX_FRMBUF_ISR_AP_READY_IRQ...\n", __func__);
+	// 	spin_lock(&chan->lock);
+	// 	chan->idle = true;
+	// 	if (chan->active_desc) {
+	// 		xilinx_frmbuf_complete_descriptor(chan);
+	// 		chan->active_desc = NULL;
+	// 	}
+	// 	xilinx_frmbuf_start_transfer(chan);
+	// 	spin_unlock(&chan->lock);
+	// } else 
+	// {
+	// 	printk("[Myles]%s: warning, non ready irq detected...\n", __func__);
+	// }
+
+	// FIXME: temp hack to get interrupt handled by MB
+	// printk("[Myles]%s: irq...\n", __func__);
+	spin_lock(&chan->lock);
+	chan->idle = true;
+	if (chan->active_desc) {
+		xilinx_frmbuf_complete_descriptor(chan);
+		chan->active_desc = NULL;
 	}
-
-	if (status & XILINX_FRMBUF_ISR_AP_READY_IRQ) {
-		spin_lock(&chan->lock);
-		chan->idle = true;
-		if (chan->active_desc) {
-			xilinx_frmbuf_complete_descriptor(chan);
-			chan->active_desc = NULL;
-		}
-		xilinx_frmbuf_start_transfer(chan);
-		spin_unlock(&chan->lock);
-	}
+	xilinx_frmbuf_start_transfer(chan, 0);
+	spin_unlock(&chan->lock);
 
 	tasklet_schedule(&chan->tasklet);
+
+	// Clear the interrupt
+	// printk("[Myles]%s: clear irq status 1.\n", __func__);
+	clear_irq_status(iomem_addr_fbwriter);
+
 	return IRQ_HANDLED;
 }
 
@@ -1231,6 +1507,16 @@ static dma_cookie_t xilinx_frmbuf_tx_submit(struct dma_async_tx_descriptor *tx)
 {
 	struct xilinx_frmbuf_tx_descriptor *desc = to_dma_tx_descriptor(tx);
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(tx->chan);
+
+    // if (chan->direction == DMA_DEV_TO_MEM) {
+    //     myles_printk("[myles]%s: chan_id: %d, luma_plane_addr: 0x%lx, chroma_plane_addr: 0x%lx, vsize: %d, hsize: %d, stride: %d.\n", \
+    //                     __func__, tx->chan->chan_id, desc->hw.luma_plane_addr, desc->hw.chroma_plane_addr, desc->hw.vsize, desc->hw.hsize, desc->hw.stride);
+    // }
+
+	// myles_printk("[myles]%s: before dumping stack.\n", __func__);
+    // dump_stack();
+    // myles_printk("[myles]%s: after dumping stack.\n", __func__);
+
 	dma_cookie_t cookie;
 	unsigned long flags;
 
@@ -1256,6 +1542,34 @@ xilinx_frmbuf_dma_prep_interleaved(struct dma_chan *dchan,
 				   struct dma_interleaved_template *xt,
 				   unsigned long flags)
 {
+    // myles_printk("[myles]%s: before dumping stack.\n", __func__);
+    // dump_stack();
+    // myles_printk("[myles]%s: after dumping stack.\n", __func__);
+
+    // myles: trick to assign value manually
+    if (xt->dir == DMA_DEV_TO_MEM) { 
+
+        xt->dst_start = 0xc400000;
+        // xt->dst_start = 0x40000000;
+    }
+
+    // if (xt->dir == DMA_DEV_TO_MEM) {
+    //     myles_printk("[myles]%s: chan_id: %d, src_start: 0x%lx, dst_start: 0x%lx, \
+    //                     src_inc: %d, dst_inc: %d, src_sgl: %d, dst_sgl: %d, \
+    //                     numf: %d, frame_size: %d, \
+    //                     data_chunk_size: %d, data_chunk_icg: %d, data_chunk_dst_icg: %d, data_chunk_src_icg: %d.\n", __func__, \
+    //                     dchan->chan_id, xt->src_start, xt->dst_start, xt->src_inc, \
+    //                     xt->dst_inc, xt->src_sgl, xt->dst_sgl, xt->numf, xt->frame_size, \
+    //                     xt->sgl[0].size, xt->sgl[0].icg, xt->sgl[0].dst_icg, xt->sgl[0].src_icg);
+    //     // printk("[myles]%s: chan_id: %d, src_start: 0x%lx, dst_start: 0x%lx, \
+    //     //                 src_inc: %d, dst_inc: %d, src_sgl: %d, dst_sgl: %d, \
+    //     //                 numf: %d, frame_size: %d, \
+    //     //                 data_chunk_size: %d, data_chunk_icg: %d, data_chunk_dst_icg: %d, data_chunk_src_icg: %d.\n", __func__, \
+    //     //                 dchan->chan_id, xt->src_start, xt->dst_start, xt->src_inc, \
+    //     //                 xt->dst_inc, xt->src_sgl, xt->dst_sgl, xt->numf, xt->frame_size, \
+    //     //                 xt->sgl[0].size, xt->sgl[0].icg, xt->sgl[0].dst_icg, xt->sgl[0].src_icg);
+    // }
+
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(dchan);
 	struct xilinx_frmbuf_tx_descriptor *desc;
 	struct xilinx_frmbuf_desc_hw *hw;
@@ -1320,6 +1634,11 @@ xilinx_frmbuf_dma_prep_interleaved(struct dma_chan *dchan,
 				xt->sgl[0].dst_icg;
 	}
 
+    // if (xt->dir == DMA_DEV_TO_MEM) {
+    //     myles_printk("[myles]%s: xilinx_frmbuf_desc_hw: luma_plane_addr: 0x%lx, chroma_plane_addr: 0x%lx, vsize: %d, hsize: %d, stride: %d.\n", \
+    //                     __func__, hw->luma_plane_addr, hw->chroma_plane_addr, hw->vsize, hw->hsize, hw->stride);
+    // }
+
 	return &desc->async_tx;
 
 error:
@@ -1336,31 +1655,42 @@ error:
  */
 static int xilinx_frmbuf_terminate_all(struct dma_chan *dchan)
 {
+	printk("[Myles]%s: going to terminate everything.\n", __func__);
+
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(dchan);
 
-	xilinx_frmbuf_halt(chan);
+	if (!secure_cam_is_in_tcs_mode)
+		xilinx_frmbuf_halt(chan);
+
 	xilinx_frmbuf_free_descriptors(chan);
 	/* worst case frame-to-frame boundary; ensure frame output complete */
 	msleep(50);
 
-	if (chan->xdev->cfg->flags & XILINX_FLUSH_PROP) {
-		u8 count;
+	if (!secure_cam_is_in_tcs_mode)
+	{
+		if (chan->xdev->cfg->flags & XILINX_FLUSH_PROP) {
+			u8 count;
 
-		/*
-		 * Flush the framebuffer FIFO and
-		 * wait for max 50ms for flush done
-		 */
-		frmbuf_set(chan, XILINX_FRMBUF_CTRL_OFFSET,
-			   XILINX_FRMBUF_CTRL_FLUSH);
-		for (count = WAIT_FOR_FLUSH_DONE; count > 0; count--) {
-			if (frmbuf_read(chan, XILINX_FRMBUF_CTRL_OFFSET) &
-					XILINX_FRMBUF_CTRL_FLUSH_DONE)
-				break;
-			usleep_range(2000, 2100);
+			/*
+			* Flush the framebuffer FIFO and
+			* wait for max 50ms for flush done
+			*/
+			frmbuf_set(chan, XILINX_FRMBUF_CTRL_OFFSET,
+				XILINX_FRMBUF_CTRL_FLUSH);
+			for (count = WAIT_FOR_FLUSH_DONE; count > 0; count--) {
+				if (frmbuf_read(chan, XILINX_FRMBUF_CTRL_OFFSET) &
+						XILINX_FRMBUF_CTRL_FLUSH_DONE)
+					break;
+				usleep_range(2000, 2100);
+			}
+
+			if (!count)
+				dev_err(chan->xdev->dev, "Framebuffer Flush not done!\n");
 		}
-
-		if (!count)
-			dev_err(chan->xdev->dev, "Framebuffer Flush not done!\n");
+	}
+	else
+	{
+		usleep_range(2000, 2100);
 	}
 
 	xilinx_frmbuf_chan_reset(chan);
@@ -1376,6 +1706,7 @@ static void xilinx_frmbuf_synchronize(struct dma_chan *dchan)
 {
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(dchan);
 
+	printk("[Myles]%s: going to kill tasklet.\n", __func__);
 	tasklet_kill(&chan->tasklet);
 }
 
@@ -1432,10 +1763,21 @@ static int xilinx_frmbuf_chan_probe(struct xilinx_frmbuf_device *xdev,
 		return err;
 	}
 
+    // if ((enum dma_transfer_direction)xdev->cfg->direction == DMA_DEV_TO_MEM) {
+    //     myles_printk("[myles]%s: dma_addr_size: %d, size of dma_addr_t: %d.\n", __func__, dma_addr_size, sizeof(dma_addr_t));
+    // }
+
 	if (dma_addr_size == 64 && sizeof(dma_addr_t) == sizeof(u64))
-		chan->write_addr = writeq_addr;
+	{
+		printk("[Myles]%s: chan->write_addr cannot be bound to 64 bit...\n", __func__);
+		return err;
+		// chan->write_addr = writeq_addr;
+	}
 	else
+	{
+		printk("[Myles]%s: chan->write_addr is bound to 32 bit...\n", __func__);
 		chan->write_addr = write_addr;
+	}
 
 	if (xdev->cfg->flags & XILINX_FID_PROP)
 		chan->hw_fid = of_property_read_bool(node, "xlnx,fid");
@@ -1481,6 +1823,10 @@ static int xilinx_frmbuf_chan_probe(struct xilinx_frmbuf_device *xdev,
  */
 static int xilinx_frmbuf_probe(struct platform_device *pdev)
 {
+	// Myles: record & replay init
+	init_recording();
+	init_replaying();
+
 	struct device_node *node = pdev->dev.of_node;
 	struct xilinx_frmbuf_device *xdev;
 	struct resource *io;
@@ -1496,6 +1842,15 @@ static int xilinx_frmbuf_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	xdev->dev = &pdev->dev;
+
+    // Myles: do secure IO re-config
+    if ((iomem_addr_fbwriter == 0) || (iomem_addr_fbwriter == NULL))
+    {
+        pdev->dev.id = 673;
+        // pdev->dev.coherent_dma_mask = -1;
+        iomem_addr_fbwriter = dma_alloc_coherent(&pdev->dev, 4096, &dma_handle_4_fbwriter, GFP_KERNEL | GFP_DMA);
+        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75007000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_fbwriter: 0x%016lx...\n", __func__, iomem_addr_fbwriter, iomem_addr_fbwriter == NULL, virt_to_phys(iomem_addr_fbwriter), dma_handle_4_fbwriter);
+    }
 
 	match = of_match_node(xilinx_frmbuf_of_ids, node);
 	if (!match)

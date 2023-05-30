@@ -1002,6 +1002,144 @@ static const struct of_device_id xscaler_of_id_table[] = {
 };
 MODULE_DEVICE_TABLE(of, xscaler_of_id_table);
 
+// Myles secure IO
+#include <linux/dma-mapping.h>
+dma_addr_t dma_handle_4_xscaler;
+u64 iomem_addr_xscaler = 0;
+
+// TCS driver
+#include <linux/secure-cam.h>
+
+// record related
+#include <linux/secure-cam-rec.h>
+
+// replay related
+#include "xilinx-vpss-scaler-presets.h"
+#include <linux/secure-cam-rep.h>
+u8 xscaler_replay_status = 0;	// 0: init; 1: start; 2: stop; other: invalid
+
+static inline void execute_tcs_command(const u64 addr, const u32 command_data, const u32 command_data_receipt)
+{
+	// printk("[Myles]%s: write: going to execute tcs command: 0x%08x at addr: 0x%08x.\n", __func__, command_data, addr);
+	iowrite32(command_data, addr);
+	// printk("[Myles]%s: read: going to execute tcs command at addr: 0x%08x.\n", __func__, addr);
+	u32 temp_read_data = ioread32(addr);
+	// printk("[Myles]%s: read: get: 0x%08x at addr: 0x%08x.\n", __func__, temp_read_data, addr);
+	while (temp_read_data != command_data_receipt)
+	{
+		temp_read_data = ioread32(addr);
+	}
+	// printk("[Myles]%s: write: exection of tcs command: 0x%08x at addr: 0x%08x is done.\n", __func__, command_data, addr);
+}
+
+void check_and_switch_to_next_presets_4_xscaler(void)
+{
+	u8 previous_replay_status = xscaler_replay_status - 1;
+	while (previous_replay_status != xscaler_replay_status)
+	{
+		previous_replay_status = xscaler_replay_status;
+		switch(xscaler_replay_status)
+		{
+			case 0:
+				if (check_and_switch_current_replay_preset(xscaler_init_preset_num_of_commands, xscaler_init_preset_cmd_type, 
+						xscaler_init_preset_size, xscaler_init_preset_addr, xscaler_init_preset_data))
+				{
+					++xscaler_replay_status;
+				}
+				break;
+			case 1:
+				if (check_and_switch_current_replay_preset(xscaler_start_preset_num_of_commands, xscaler_start_preset_cmd_type, 
+						xscaler_start_preset_size, xscaler_start_preset_addr, xscaler_start_preset_data))
+				{
+					++xscaler_replay_status;
+				}
+				break;
+			case 2:
+				if (check_and_switch_current_replay_preset(xscaler_stop_preset_num_of_commands, xscaler_stop_preset_cmd_type, 
+						xscaler_stop_preset_size, xscaler_stop_preset_addr, xscaler_stop_preset_data))
+				{
+					++xscaler_replay_status;
+				}
+				break;
+		}
+	}
+
+	// printk("[Myles]%s: we have now switched to status: %d.\n", __func__, xscaler_replay_status);
+}
+
+static u32 xscaler_read(struct xscaler_device *xscaler, u32 reg)
+{
+    // replay
+	if (secure_cam_is_in_tcs_mode)
+	{
+		check_and_switch_to_next_presets_4_xscaler();
+		u32 data_to_return = 0;
+		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_READ, 32, reg, 0, &data_to_return);
+		if (replay_result == -1)
+			printk("[Myles]%s: replay error.\n", __func__);
+
+		return data_to_return;
+	}
+
+	// lock for recording
+	// lock_recording_mutex(1);
+    
+    iowrite32(reg, iomem_addr_xscaler);
+    iowrite32(32, iomem_addr_xscaler + 4);
+    
+    u32 temp_reading_data = 32;
+    while (temp_reading_data == 32)
+    {
+        temp_reading_data = ioread32(iomem_addr_xscaler + 4);
+    }
+    // printk("[Myles]%s: reading from addr: 0x%08x, data: 0x%08x.\n", __func__, reg, temp_reading_data);
+    
+	// Record
+	// lock_irq_status_recording_mutex(1);
+	// record_next_sec_command(iomem_addr_xscaler, SEC_REPLAY_TYPE_READ, 32, reg, temp_reading_data);
+	// lock_irq_status_recording_mutex(0);
+	// lock_recording_mutex(0);
+
+	return temp_reading_data;
+}
+
+static void xscaler_write(struct xscaler_device *xscaler, u32 reg, u32 data)
+{
+    // Replay
+	if (secure_cam_is_in_tcs_mode)
+	{
+		check_and_switch_to_next_presets_4_xscaler();
+		u32 data_to_return = 0;
+		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_WRITE, 32, reg, data, &data_to_return);
+		if (replay_result == -1)
+			printk("[Myles]%s: replay error.\n", __func__);
+
+		return;
+	}
+
+	// Record
+	// lock_recording_mutex(1);
+	// lock_irq_status_recording_mutex(1);
+	// record_next_sec_command(iomem_addr_xscaler, SEC_REPLAY_TYPE_WRITE, 32, reg, data);
+	// lock_irq_status_recording_mutex(0);
+
+    u32 done_indicator = 32;
+
+	iowrite32(reg, iomem_addr_xscaler + 8);
+	iowrite32(data, iomem_addr_xscaler + 12);
+	iowrite32(32, iomem_addr_xscaler + 16);
+
+    while (done_indicator == 32)
+    {
+        done_indicator = ioread32(iomem_addr_xscaler + 16);
+    }
+    
+    // printk("[Myles]%s: writing to addr: 0x%08x, data: 0x%08x, done_indicator: 0x%08x.\n", __func__, reg, data, done_indicator);
+
+	// unlock for recording
+	// lock_recording_mutex(0);
+}
+
 static inline struct xscaler_device *to_scaler(struct v4l2_subdev *subdev)
 {
 	return container_of(subdev, struct xscaler_device, xvip.subdev);
@@ -1251,6 +1389,9 @@ static void xv_hscaler_set_coeff(struct xscaler_device *xscaler)
 	u32 ntaps = xscaler->num_hori_taps;
 	u32 nphases = xscaler->max_num_phases;
 	u32 base_addr;
+    
+    // Myles: id re-assign
+    xscaler->xvip.id = 671;
 
 	offset = (XV_HSCALER_MAX_H_TAPS - ntaps) / 2;
 	base_addr = V_HSCALER_OFF + XV_HSCALER_CTRL_ADDR_HWREG_HFLTCOEFF_BASE;
@@ -1261,7 +1402,9 @@ static void xv_hscaler_set_coeff(struct xscaler_device *xscaler)
 			       XSCALER_BITSHIFT_16) |
 			       (xscaler->hscaler_coeff[i][rd_indx] &
 			       XHSC_MASK_LOW_16BITS);
-			 xvip_write(&xscaler->xvip, base_addr +
+			//  xvip_write(&xscaler->xvip, base_addr +
+			// 	    ((i * ntaps / 2 + j) * 4), val);
+			 xscaler_write(xscaler, base_addr +
 				    ((i * ntaps / 2 + j) * 4), val);
 		}
 	}
@@ -1319,7 +1462,9 @@ static void xv_vscaler_set_coeff(struct xscaler_device *xscaler)
 			       XSCALER_BITSHIFT_16) |
 			       (xscaler->vscaler_coeff[i][rd_indx] &
 			       XVSC_MASK_LOW_16BITS);
-			xvip_write(&xscaler->xvip,
+			// xvip_write(&xscaler->xvip,
+			// 	   base_addr + ((i * ntaps / 2 + j) * 4), val);
+			xscaler_write(xscaler,
 				   base_addr + ((i * ntaps / 2 + j) * 4), val);
 		}
 	}
@@ -1370,17 +1515,27 @@ xv_vscaler_select_coeff(struct xscaler_device *xscaler,
 static inline void
 xv_procss_disable_block(struct xvip_device *xvip, u32 channel, u32 ip_block)
 {
-	xvip_clr(xvip, ((channel - 1) * XGPIO_CHAN_OFFSET) +
-		 XGPIO_DATA_OFFSET + S_AXIS_RESET_OFF,
-		 ip_block);
+	// xvip_clr(xvip, ((channel - 1) * XGPIO_CHAN_OFFSET) +
+	// 	 XGPIO_DATA_OFFSET + S_AXIS_RESET_OFF,
+	// 	 ip_block);
+
+	xscaler_write(NULL, 
+		((channel - 1) * XGPIO_CHAN_OFFSET) + XGPIO_DATA_OFFSET + S_AXIS_RESET_OFF, 
+		 xscaler_read(NULL, 
+		 ((channel - 1) * XGPIO_CHAN_OFFSET) + XGPIO_DATA_OFFSET + S_AXIS_RESET_OFF) & ~ip_block);
 }
 
 static inline void
 xv_procss_enable_block(struct xvip_device *xvip, u32 channel, u32 ip_block)
 {
-	xvip_set(xvip, ((channel - 1) * XGPIO_CHAN_OFFSET) +
-		 XGPIO_DATA_OFFSET + S_AXIS_RESET_OFF,
-		 ip_block);
+	// xvip_set(xvip, ((channel - 1) * XGPIO_CHAN_OFFSET) +
+	// 	 XGPIO_DATA_OFFSET + S_AXIS_RESET_OFF,
+	// 	 ip_block);
+
+	xscaler_write(NULL, 
+		((channel - 1) * XGPIO_CHAN_OFFSET) + XGPIO_DATA_OFFSET + S_AXIS_RESET_OFF, 
+		 xscaler_read(NULL, 
+		 ((channel - 1) * XGPIO_CHAN_OFFSET) + XGPIO_DATA_OFFSET + S_AXIS_RESET_OFF) | ip_block);
 }
 
 static void xscaler_reset(struct xscaler_device *xscaler)
@@ -1427,7 +1582,10 @@ xv_vscaler_setup_video_fmt(struct xscaler_device *xscaler, u32 code_in)
 			code_in);
 		return -EINVAL;
 	}
-	xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// 	   XV_VSCALER_CTRL_ADDR_HWREG_COLORMODE_DATA,
+	// 	   video_in);
+	xscaler_write(xscaler, V_VSCALER_OFF +
 		   XV_VSCALER_CTRL_ADDR_HWREG_COLORMODE_DATA,
 		   video_in);
 	/*
@@ -1463,7 +1621,10 @@ static int xv_hscaler_setup_video_fmt(struct xscaler_device *xscaler,
 		return -EINVAL;
 	}
 
-	xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// 	XV_HSCALER_CTRL_ADDR_HWREG_COLORMODE_DATA,
+	// 	vsc_out);
+	xscaler_write(xscaler, V_HSCALER_OFF +
 		XV_HSCALER_CTRL_ADDR_HWREG_COLORMODE_DATA,
 		vsc_out);
 
@@ -1498,7 +1659,10 @@ static int xv_hscaler_setup_video_fmt(struct xscaler_device *xscaler,
 			code_out);
 		return -EINVAL;
 	}
-	xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// 	   XV_HSCALER_CTRL_ADDR_HWREG_COLORMODEOUT_DATA,
+	// 	   video_out);
+	xscaler_write(xscaler, V_HSCALER_OFF +
 		   XV_HSCALER_CTRL_ADDR_HWREG_COLORMODEOUT_DATA,
 		   video_out);
 	return 0;
@@ -1537,7 +1701,8 @@ xv_hscaler_set_phases(struct xscaler_device *xscaler)
 			msb = lower_32_bits(xscaler->H_phases[i + 1] &
 					    XHSC_MASK_LOW_16BITS);
 			val = (msb << 16 | lsb);
-			xvip_write(&xscaler->xvip, offset + (index * 4), val);
+			// xvip_write(&xscaler->xvip, offset + (index * 4), val);
+			xscaler_write(xscaler, offset + (index * 4), val);
 			++index;
 		}
 		dev_dbg(xscaler->xvip.dev,
@@ -1551,7 +1716,8 @@ xv_hscaler_set_phases(struct xscaler_device *xscaler)
 		for (i = 0; i < loop_width; i++) {
 			val = lower_32_bits(xscaler->H_phases[i] &
 					    XHSC_MASK_LOW_32BITS);
-			xvip_write(&xscaler->xvip, offset + (i * 4), val);
+			// xvip_write(&xscaler->xvip, offset + (i * 4), val);
+			xscaler_write(xscaler, offset + (i * 4), val);
 		}
 		dev_dbg(xscaler->xvip.dev,
 			"%s : Operating in 2 PPC design", __func__);
@@ -1566,8 +1732,10 @@ xv_hscaler_set_phases(struct xscaler_device *xscaler)
 			phasehdata = xscaler->H_phases[index++];
 			lsb = (u32)(phasehdata & XHSC_MASK_LOW_32BITS);
 			msb = (u32)((phasehdata >> 32) & XHSC_MASK_LOW_32BITS);
-			xvip_write(&xscaler->xvip, offset + (j * 4), lsb);
-			xvip_write(&xscaler->xvip, offset + ((j + 1) * 4), msb);
+			// xvip_write(&xscaler->xvip, offset + (j * 4), lsb);
+			xscaler_write(xscaler, offset + (j * 4), lsb);
+			// xvip_write(&xscaler->xvip, offset + ((j + 1) * 4), msb);
+			xscaler_write(xscaler, offset + ((j + 1) * 4), msb);
 			j += 2;
 		}
 		dev_dbg(xscaler->xvip.dev,
@@ -1590,6 +1758,14 @@ static int xscaler_s_stream(struct v4l2_subdev *subdev, int enable)
 	int ret;
 
 	if (!enable) {
+
+		if (!secure_cam_is_in_tcs_mode)
+		{
+			printk("[Myles]%s: about to perform a cpature reset.\n", __func__);
+			execute_tcs_command(iomem_addr_xscaler + IO_ADDR_HIGH_NON_TCS_COMMAND_OFFSET, IO_ADDR_HIGH_NON_TCS_RESET, IO_ADDR_HIGH_NON_TCS_RESET + IO_ADDR_HIGH_TCS_COMMAND_RECIPT_OFFSET);
+			printk("[Myles]%s: done with performing a cpature reset.\n", __func__);
+		}
+
 		dev_dbg(xscaler->xvip.dev, "%s: Stream Off", __func__);
 		/* Reset the Global IP Reset through PS GPIO */
 		gpiod_set_value_cansleep(xscaler->rst_gpio,
@@ -1626,13 +1802,21 @@ static int xscaler_s_stream(struct v4l2_subdev *subdev, int enable)
 		xv_vscaler_set_coeff(xscaler);
 	}
 
-	xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// 	   XV_VSCALER_CTRL_ADDR_HWREG_HEIGHTIN_DATA, height_in);
+	xscaler_write(xscaler, V_VSCALER_OFF +
 		   XV_VSCALER_CTRL_ADDR_HWREG_HEIGHTIN_DATA, height_in);
-	xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// 	   XV_VSCALER_CTRL_ADDR_HWREG_WIDTH_DATA, width_in);
+	xscaler_write(xscaler, V_VSCALER_OFF +
 		   XV_VSCALER_CTRL_ADDR_HWREG_WIDTH_DATA, width_in);
-	xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// 	   XV_VSCALER_CTRL_ADDR_HWREG_HEIGHTOUT_DATA, height_out);
+	xscaler_write(xscaler, V_VSCALER_OFF +
 		   XV_VSCALER_CTRL_ADDR_HWREG_HEIGHTOUT_DATA, height_out);
-	xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// 	   XV_VSCALER_CTRL_ADDR_HWREG_LINERATE_DATA, line_rate);
+	xscaler_write(xscaler, V_VSCALER_OFF +
 		   XV_VSCALER_CTRL_ADDR_HWREG_LINERATE_DATA, line_rate);
 	ret = xv_vscaler_setup_video_fmt(xscaler, code_in);
 	if (ret < 0)
@@ -1641,13 +1825,21 @@ static int xscaler_s_stream(struct v4l2_subdev *subdev, int enable)
 	/* H-Scaler_setup */
 	pixel_rate = (width_in * STEP_PRECISION) / width_out;
 
-	xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// 	   XV_HSCALER_CTRL_ADDR_HWREG_HEIGHT_DATA, height_out);
+	xscaler_write(xscaler, V_HSCALER_OFF +
 		   XV_HSCALER_CTRL_ADDR_HWREG_HEIGHT_DATA, height_out);
-	xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// 	   XV_HSCALER_CTRL_ADDR_HWREG_WIDTHIN_DATA, width_in);
+	xscaler_write(xscaler, V_HSCALER_OFF +
 		   XV_HSCALER_CTRL_ADDR_HWREG_WIDTHIN_DATA, width_in);
-	xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// 	   XV_HSCALER_CTRL_ADDR_HWREG_WIDTHOUT_DATA, width_out);
+	xscaler_write(xscaler, V_HSCALER_OFF +
 		   XV_HSCALER_CTRL_ADDR_HWREG_WIDTHOUT_DATA, width_out);
-	xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// 	   XV_HSCALER_CTRL_ADDR_HWREG_PIXELRATE_DATA, pixel_rate);
+	xscaler_write(xscaler, V_HSCALER_OFF +
 		   XV_HSCALER_CTRL_ADDR_HWREG_PIXELRATE_DATA, pixel_rate);
 	ret = xv_hscaler_setup_video_fmt(xscaler, code_out, ret);
 	if (ret < 0)
@@ -1664,9 +1856,13 @@ static int xscaler_s_stream(struct v4l2_subdev *subdev, int enable)
 	xv_hscaler_set_phases(xscaler);
 
 	/* Start Scaler sub-cores */
-	xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_HSCALER_OFF +
+	// 	   XV_HSCALER_CTRL_ADDR_AP_CTRL, XSCALER_STREAM_ON);
+	xscaler_write(xscaler, V_HSCALER_OFF +
 		   XV_HSCALER_CTRL_ADDR_AP_CTRL, XSCALER_STREAM_ON);
-	xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// xvip_write(&xscaler->xvip, V_VSCALER_OFF +
+	// 	   XV_VSCALER_CTRL_ADDR_AP_CTRL, XSCALER_STREAM_ON);
+	xscaler_write(xscaler, V_VSCALER_OFF +
 		   XV_VSCALER_CTRL_ADDR_AP_CTRL, XSCALER_STREAM_ON);
 	xv_procss_enable_block(&xscaler->xvip, XGPIO_CH_RESET_SEL,
 			       XGPIO_RESET_MASK_VIDEO_IN);
@@ -1958,6 +2154,10 @@ static int xscaler_parse_of(struct xscaler_device *xscaler)
 
 static int xscaler_probe(struct platform_device *pdev)
 {
+	// Myles: record & replay init
+	// init_recording();
+	init_replaying();
+
 	struct xscaler_device *xscaler;
 	struct v4l2_subdev *subdev;
 	struct v4l2_mbus_framefmt *default_format;
@@ -1971,6 +2171,15 @@ static int xscaler_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	xscaler->xvip.dev = &pdev->dev;
+
+    // Myles: do secure IO re-config
+    if ((iomem_addr_xscaler == 0) || (iomem_addr_xscaler == NULL))
+    {
+        pdev->dev.id = 671;
+        // pdev->dev.coherent_dma_mask = -1;
+        iomem_addr_xscaler = dma_alloc_coherent(&pdev->dev, 4096, &dma_handle_4_xscaler, GFP_KERNEL | GFP_DMA);
+        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75005000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_xscaler: 0x%016lx...\n", __func__, iomem_addr_xscaler, iomem_addr_xscaler == NULL, virt_to_phys(iomem_addr_xscaler), dma_handle_4_xscaler);
+    }
 
 	match = of_match_node(xscaler_of_id_table, node);
 	if (!match)
@@ -2068,6 +2277,9 @@ static int xscaler_probe(struct platform_device *pdev)
 	dev_info(xscaler->xvip.dev, "Num Vert Taps %d",
 		 xscaler->num_vert_taps);
 	dev_info(&pdev->dev, "VPSS Scaler Probe Successful");
+
+    myles_printk("[myles]xscaler_probe: VPSS xscaler is probed.\n");
+
 	return 0;
 
 error:
