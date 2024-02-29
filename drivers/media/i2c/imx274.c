@@ -1361,6 +1361,8 @@ static int imx274_load_default(struct stimx274 *priv)
 	return 0;
 }
 
+#include <linux/time.h>
+
 /**
  * imx274_s_stream - It is used to start/stop the streaming.
  * @sd: V4L2 Sub device
@@ -1380,20 +1382,25 @@ static int imx274_s_stream(struct v4l2_subdev *sd, int on)
 		on ? "Stream Start" : "Stream Stop",
 		imx274->mode - &imx274_modes[0]);
 
+	ktime_t start_time, end_time;
 	if (secure_cam_is_in_tcs_mode)
 	{
 		printk("[Myles]%s: mode: %td, on(or not): %d, skipping.\n", __func__, imx274->mode - &imx274_modes[0], on);
 		if (on)
 		{
+			start_time = ktime_get();
 			execute_tcs_command(iomem_addr_imx274 + IO_ADDR_HIGH_TCS_COMMAND_OFFSET, 
 				IO_ADDR_HIGH_TCS_COMMAND_START,IO_ADDR_HIGH_TCS_COMMAND_START + IO_ADDR_HIGH_TCS_COMMAND_RECIPT_OFFSET);
-			printk("[Myles]%s: recording has started.\n", __func__);
+			end_time = ktime_get();
+			printk("[Myles]%s: recording has started, time elapsed: %lld ns.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
 		}
 		else
 		{
+			start_time = ktime_get();
 			execute_tcs_command(iomem_addr_imx274 + IO_ADDR_HIGH_TCS_COMMAND_OFFSET, 
 				IO_ADDR_HIGH_TCS_COMMAND_STOP,IO_ADDR_HIGH_TCS_COMMAND_STOP + IO_ADDR_HIGH_TCS_COMMAND_RECIPT_OFFSET);
-			printk("[Myles]%s: recording has stopped.\n", __func__);
+			end_time = ktime_get();
+			printk("[Myles]%s: recording has stopped, time elapsed: %lld ns.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
 		}
 		return 0;
 	}

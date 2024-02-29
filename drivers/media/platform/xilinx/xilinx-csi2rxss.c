@@ -598,12 +598,21 @@ void check_and_switch_to_next_presets_4_csi2rxss(void)
 	}
 }
 
+// for eval only
+#include <linux/time.h>
+char is_read_evaled = 0;
+char is_write_evaled = 0;
+
 /*
  * Regsiter related operations
  */
 static inline u32 xcsi2rxss_read(struct xcsi2rxss_core *xcsi2rxss,
 					u32 addr)
 {
+	// for eval only
+	ktime_t start_time, end_time;
+	start_time = ktime_get();
+
 	// replay
 	if (secure_cam_is_in_tcs_mode)
 	{
@@ -634,6 +643,14 @@ static inline u32 xcsi2rxss_read(struct xcsi2rxss_core *xcsi2rxss,
 	// lock_irq_status_recording_mutex(0);
 	// lock_recording_mutex(0);
 
+	// for eval only
+	end_time = ktime_get();
+	if (is_read_evaled == 0)
+	{
+		printk("[Myles]%s: read time: %lld.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
+		is_read_evaled = 1;
+	}
+
     return temp_reading_data;
 }
 
@@ -641,6 +658,10 @@ static inline void xcsi2rxss_write(struct xcsi2rxss_core *xcsi2rxss,
 					u32 addr,
 					u32 value)
 {
+	// for eval only
+	ktime_t start_time, end_time;
+	start_time = ktime_get();
+
 	// Replay
 	if (secure_cam_is_in_tcs_mode)
 	{
@@ -669,6 +690,14 @@ static inline void xcsi2rxss_write(struct xcsi2rxss_core *xcsi2rxss,
     {
         done_indicator = ioread32(iomem_addr_csi2rxss + 16);
     }
+
+	// for eval only
+	end_time = ktime_get();
+	if (is_write_evaled == 0)
+	{
+		printk("[Myles]%s: write time: %lld.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
+		is_write_evaled = 1;
+	}
 
 	// unlock for recording
 	// lock_recording_mutex(0);
