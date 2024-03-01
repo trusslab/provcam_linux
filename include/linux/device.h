@@ -1762,29 +1762,29 @@ void _dev_info(const struct device *dev, const char *fmt, ...)
 })
 #endif
 
-#define MYLES_DEBUG
+#define SHIROHA_DEBUG
 
-#if defined(MYLES_DEBUG)
-#define myles_printk(fmt, ...)                      \
+#if defined(SHIROHA_DEBUG)
+#define shiroha_printk(fmt, ...)                      \
     printk(dev_fmt(fmt), ##__VA_ARGS__);
 #else 
-#define myles_printk(fmt, ...)						\
+#define shiroha_printk(fmt, ...)						\
 ({									\
 	if (0)								\
 		printk(dev_fmt(fmt), ##__VA_ARGS__); \
 })
 #endif
 
-// #define MYLES_DEV_DEBUG
+// #define SHIROHA_DEV_DEBUG
 
-#if defined(MYLES_DEV_DYNAMIC_DEBUG)
-#define myles_dev_dbg(dev, fmt, ...)						\
+#if defined(SHIROHA_DEV_DYNAMIC_DEBUG)
+#define shiroha_dev_dbg(dev, fmt, ...)						\
 	dynamic_dev_dbg(dev, dev_fmt(fmt), ##__VA_ARGS__)
-#elif defined(MYLES_DEV_DEBUG)
-#define myles_dev_dbg(dev, fmt, ...)						\
+#elif defined(SHIROHA_DEV_DEBUG)
+#define shiroha_dev_dbg(dev, fmt, ...)						\
 	dev_printk(KERN_DEBUG, dev, dev_fmt(fmt), ##__VA_ARGS__)
 #else
-#define myles_dev_dbg(dev, fmt, ...)						\
+#define shiroha_dev_dbg(dev, fmt, ...)						\
 ({									\
 	if (0)								\
 		dev_printk(KERN_DEBUG, dev, dev_fmt(fmt), ##__VA_ARGS__); \

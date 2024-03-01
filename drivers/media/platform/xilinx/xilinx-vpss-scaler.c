@@ -1002,7 +1002,7 @@ static const struct of_device_id xscaler_of_id_table[] = {
 };
 MODULE_DEVICE_TABLE(of, xscaler_of_id_table);
 
-// Myles secure IO
+// Shiroha secure IO
 #include <linux/dma-mapping.h>
 dma_addr_t dma_handle_4_xscaler;
 u64 iomem_addr_xscaler = 0;
@@ -1020,16 +1020,16 @@ u8 xscaler_replay_status = 0;	// 0: init; 1: start; 2: stop; other: invalid
 
 static inline void execute_tcs_command(const u64 addr, const u32 command_data, const u32 command_data_receipt)
 {
-	// printk("[Myles]%s: write: going to execute tcs command: 0x%08x at addr: 0x%08x.\n", __func__, command_data, addr);
+	// printk("[Shiroha]%s: write: going to execute tcs command: 0x%08x at addr: 0x%08x.\n", __func__, command_data, addr);
 	iowrite32(command_data, addr);
-	// printk("[Myles]%s: read: going to execute tcs command at addr: 0x%08x.\n", __func__, addr);
+	// printk("[Shiroha]%s: read: going to execute tcs command at addr: 0x%08x.\n", __func__, addr);
 	u32 temp_read_data = ioread32(addr);
-	// printk("[Myles]%s: read: get: 0x%08x at addr: 0x%08x.\n", __func__, temp_read_data, addr);
+	// printk("[Shiroha]%s: read: get: 0x%08x at addr: 0x%08x.\n", __func__, temp_read_data, addr);
 	while (temp_read_data != command_data_receipt)
 	{
 		temp_read_data = ioread32(addr);
 	}
-	// printk("[Myles]%s: write: exection of tcs command: 0x%08x at addr: 0x%08x is done.\n", __func__, command_data, addr);
+	// printk("[Shiroha]%s: write: exection of tcs command: 0x%08x at addr: 0x%08x is done.\n", __func__, command_data, addr);
 }
 
 void check_and_switch_to_next_presets_4_xscaler(void)
@@ -1064,7 +1064,7 @@ void check_and_switch_to_next_presets_4_xscaler(void)
 		}
 	}
 
-	// printk("[Myles]%s: we have now switched to status: %d.\n", __func__, xscaler_replay_status);
+	// printk("[Shiroha]%s: we have now switched to status: %d.\n", __func__, xscaler_replay_status);
 }
 
 static u32 xscaler_read(struct xscaler_device *xscaler, u32 reg)
@@ -1076,7 +1076,7 @@ static u32 xscaler_read(struct xscaler_device *xscaler, u32 reg)
 		u32 data_to_return = 0;
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_READ, 32, reg, 0, &data_to_return);
 		if (replay_result == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 
 		return data_to_return;
 	}
@@ -1092,7 +1092,7 @@ static u32 xscaler_read(struct xscaler_device *xscaler, u32 reg)
     {
         temp_reading_data = ioread32(iomem_addr_xscaler + 4);
     }
-    // printk("[Myles]%s: reading from addr: 0x%08x, data: 0x%08x.\n", __func__, reg, temp_reading_data);
+    // printk("[Shiroha]%s: reading from addr: 0x%08x, data: 0x%08x.\n", __func__, reg, temp_reading_data);
     
 	// Record
 	// lock_irq_status_recording_mutex(1);
@@ -1112,7 +1112,7 @@ static void xscaler_write(struct xscaler_device *xscaler, u32 reg, u32 data)
 		u32 data_to_return = 0;
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_WRITE, 32, reg, data, &data_to_return);
 		if (replay_result == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 
 		return;
 	}
@@ -1134,7 +1134,7 @@ static void xscaler_write(struct xscaler_device *xscaler, u32 reg, u32 data)
         done_indicator = ioread32(iomem_addr_xscaler + 16);
     }
     
-    // printk("[Myles]%s: writing to addr: 0x%08x, data: 0x%08x, done_indicator: 0x%08x.\n", __func__, reg, data, done_indicator);
+    // printk("[Shiroha]%s: writing to addr: 0x%08x, data: 0x%08x, done_indicator: 0x%08x.\n", __func__, reg, data, done_indicator);
 
 	// unlock for recording
 	// lock_recording_mutex(0);
@@ -1390,7 +1390,7 @@ static void xv_hscaler_set_coeff(struct xscaler_device *xscaler)
 	u32 nphases = xscaler->max_num_phases;
 	u32 base_addr;
     
-    // Myles: id re-assign
+    // Shiroha: id re-assign
     xscaler->xvip.id = 671;
 
 	offset = (XV_HSCALER_MAX_H_TAPS - ntaps) / 2;
@@ -1761,9 +1761,9 @@ static int xscaler_s_stream(struct v4l2_subdev *subdev, int enable)
 
 		if (!secure_cam_is_in_tcs_mode)
 		{
-			printk("[Myles]%s: about to perform a cpature reset.\n", __func__);
+			printk("[Shiroha]%s: about to perform a cpature reset.\n", __func__);
 			execute_tcs_command(iomem_addr_xscaler + IO_ADDR_HIGH_NON_TCS_COMMAND_OFFSET, IO_ADDR_HIGH_NON_TCS_RESET, IO_ADDR_HIGH_NON_TCS_RESET + IO_ADDR_HIGH_TCS_COMMAND_RECIPT_OFFSET);
-			printk("[Myles]%s: done with performing a cpature reset.\n", __func__);
+			printk("[Shiroha]%s: done with performing a cpature reset.\n", __func__);
 		}
 
 		dev_dbg(xscaler->xvip.dev, "%s: Stream Off", __func__);
@@ -2154,7 +2154,7 @@ static int xscaler_parse_of(struct xscaler_device *xscaler)
 
 static int xscaler_probe(struct platform_device *pdev)
 {
-	// Myles: record & replay init
+	// Shiroha: record & replay init
 	// init_recording();
 	init_replaying();
 
@@ -2172,13 +2172,13 @@ static int xscaler_probe(struct platform_device *pdev)
 
 	xscaler->xvip.dev = &pdev->dev;
 
-    // Myles: do secure IO re-config
+    // Shiroha: do secure IO re-config
     if ((iomem_addr_xscaler == 0) || (iomem_addr_xscaler == NULL))
     {
         pdev->dev.id = 671;
         // pdev->dev.coherent_dma_mask = -1;
         iomem_addr_xscaler = dma_alloc_coherent(&pdev->dev, 4096, &dma_handle_4_xscaler, GFP_KERNEL | GFP_DMA);
-        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75005000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_xscaler: 0x%016lx...\n", __func__, iomem_addr_xscaler, iomem_addr_xscaler == NULL, virt_to_phys(iomem_addr_xscaler), dma_handle_4_xscaler);
+        printk("[Shiroha]%s: after dma_alloc_coherent with phy addr: 0x75005000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_xscaler: 0x%016lx...\n", __func__, iomem_addr_xscaler, iomem_addr_xscaler == NULL, virt_to_phys(iomem_addr_xscaler), dma_handle_4_xscaler);
     }
 
 	match = of_match_node(xscaler_of_id_table, node);
@@ -2278,7 +2278,7 @@ static int xscaler_probe(struct platform_device *pdev)
 		 xscaler->num_vert_taps);
 	dev_info(&pdev->dev, "VPSS Scaler Probe Successful");
 
-    myles_printk("[myles]xscaler_probe: VPSS xscaler is probed.\n");
+    shiroha_printk("[shiroha]xscaler_probe: VPSS xscaler is probed.\n");
 
 	return 0;
 

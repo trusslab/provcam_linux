@@ -620,7 +620,7 @@ static inline u32 xcsi2rxss_read(struct xcsi2rxss_core *xcsi2rxss,
 		u32 data_to_return = 0;
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_READ, 32, addr, 0, &data_to_return);
 		if (replay_result == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 
 		return data_to_return;
 	}
@@ -647,7 +647,7 @@ static inline u32 xcsi2rxss_read(struct xcsi2rxss_core *xcsi2rxss,
 	end_time = ktime_get();
 	if (is_read_evaled == 0)
 	{
-		printk("[Myles]%s: read time: %lld.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
+		printk("[Shiroha]%s: read time: %lld.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
 		is_read_evaled = 1;
 	}
 
@@ -669,7 +669,7 @@ static inline void xcsi2rxss_write(struct xcsi2rxss_core *xcsi2rxss,
 		u32 data_to_return = 0;
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_WRITE, 32, addr, value, &data_to_return);
 		if (replay_result == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 
 		return;
 	}
@@ -695,7 +695,7 @@ static inline void xcsi2rxss_write(struct xcsi2rxss_core *xcsi2rxss,
 	end_time = ktime_get();
 	if (is_write_evaled == 0)
 	{
-		printk("[Myles]%s: write time: %lld.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
+		printk("[Shiroha]%s: write time: %lld.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
 		is_write_evaled = 1;
 	}
 
@@ -952,14 +952,14 @@ static irqreturn_t xcsi2rxss_irq_handler(int irq, void *dev_id)
 
 	// if (!status)
 	// {
-	// 	printk("[Myles]%s: IRQ_NONE.\n", __func__);
+	// 	printk("[Shiroha]%s: IRQ_NONE.\n", __func__);
 	// 	return IRQ_NONE;
 	// }
 
-	// // Myles: commented out for better record & replay
+	// // Shiroha: commented out for better record & replay
 	// // if (status & XCSI_ISR_SPFIFONE_MASK) {
 
-	// // 	printk("[Myles]%s: XCSI_ISR_SPFIFONE_MASK.\n", __func__);
+	// // 	printk("[Shiroha]%s: XCSI_ISR_SPFIFONE_MASK.\n", __func__);
 
 	// // 	memset(&state->event, 0, sizeof(state->event));
 
@@ -973,7 +973,7 @@ static irqreturn_t xcsi2rxss_irq_handler(int irq, void *dev_id)
 
 	// // if (status & XCSI_ISR_SPFIFOF_MASK) {
 
-	// // 	printk("[Myles]%s: XCSI_ISR_SPFIFOF_MASK.\n", __func__);
+	// // 	printk("[Shiroha]%s: XCSI_ISR_SPFIFOF_MASK.\n", __func__);
 
 	// // 	dev_alert(core->dev, "Short packet FIFO overflowed\n");
 
@@ -986,7 +986,7 @@ static irqreturn_t xcsi2rxss_irq_handler(int irq, void *dev_id)
 
 	// // if (status & XCSI_ISR_SLBF_MASK) {
 
-	// // 	printk("[Myles]%s: XCSI_ISR_SLBF_MASK.\n", __func__);
+	// // 	printk("[Shiroha]%s: XCSI_ISR_SLBF_MASK.\n", __func__);
 
 	// // 	dev_alert(core->dev, "Stream Line Buffer Full!\n");
 	// // 	if (core->rst_gpio) {
@@ -1007,7 +1007,7 @@ static irqreturn_t xcsi2rxss_irq_handler(int irq, void *dev_id)
 
 	// // if (status & XCSI_ISR_ALLINTR_MASK) {
 
-	// // 	printk("[Myles]%s: XCSI_ISR_ALLINTR_MASK.\n", __func__);
+	// // 	printk("[Shiroha]%s: XCSI_ISR_ALLINTR_MASK.\n", __func__);
 
 	// // 	unsigned int i;
 
@@ -1021,7 +1021,7 @@ static irqreturn_t xcsi2rxss_irq_handler(int irq, void *dev_id)
 
 	// // 	if (status & XCSI_ISR_VCX_MASK && core->en_vcx) {
 
-	// // 		printk("[Myles]%s: XCSI_ISR_VCX_MASK && core->en_vcx.\n", __func__);
+	// // 		printk("[Shiroha]%s: XCSI_ISR_VCX_MASK && core->en_vcx.\n", __func__);
 
 	// // 		u32 vcxstatus;
 
@@ -1424,7 +1424,7 @@ static int xcsi2rxss_s_stream(struct v4l2_subdev *sd, int enable)
 		goto unlock;
 	}
 
-	printk("[Myles]%s: enable = %d, streaming = %d\n", __func__, enable, xcsi2rxss->streaming);
+	printk("[Shiroha]%s: enable = %d, streaming = %d\n", __func__, enable, xcsi2rxss->streaming);
 
 	if (enable) {
 		if (!xcsi2rxss->streaming) {
@@ -1988,20 +1988,20 @@ static int xcsi2rxss_parse_of(struct xcsi2rxss_state *xcsi2rxss)
 
 static int xcsi2rxss_probe(struct platform_device *pdev)
 {
-	printk("[Myles]%s: xcsi2rxss probing has started...\n", __func__);
+	printk("[Shiroha]%s: xcsi2rxss probing has started...\n", __func__);
 
-	// Myles: record & replay init
+	// Shiroha: record & replay init
 	// init_recording();
 	init_replaying();
 
     global_pdev = pdev;
 
-    // Myles: do secure IO re-config
+    // Shiroha: do secure IO re-config
     if ((iomem_addr_csi2rxss == 0) || (iomem_addr_csi2rxss == NULL))
     {
         global_pdev->dev.id = 666;
         iomem_addr_csi2rxss = dma_alloc_coherent(&global_pdev->dev, 4096, &dma_handle_4_csi2rxss, GFP_KERNEL | GFP_DMA);
-        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75000000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_csi2rxss: 0x%016lx...\n", __func__, iomem_addr_csi2rxss, iomem_addr_csi2rxss == NULL, virt_to_phys(iomem_addr_csi2rxss), dma_handle_4_csi2rxss);
+        printk("[Shiroha]%s: after dma_alloc_coherent with phy addr: 0x75000000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_csi2rxss: 0x%016lx...\n", __func__, iomem_addr_csi2rxss, iomem_addr_csi2rxss == NULL, virt_to_phys(iomem_addr_csi2rxss), dma_handle_4_csi2rxss);
     }
 
 	struct v4l2_subdev *subdev;
@@ -2083,7 +2083,7 @@ static int xcsi2rxss_probe(struct platform_device *pdev)
 	 */
 
 	if (xcsi2rxss->core.rst_gpio) {
-		printk("[Myles]%s: performing hard reset of xcsi2rxss...\n", __func__);
+		printk("[Shiroha]%s: performing hard reset of xcsi2rxss...\n", __func__);
 		gpiod_set_value_cansleep(xcsi2rxss->core.rst_gpio, 1);
 		/* minimum of 40 dphy_clk_200M cycles */
 		usleep_range(1, 2);
@@ -2091,7 +2091,7 @@ static int xcsi2rxss_probe(struct platform_device *pdev)
 	} 
 	else
 	{
-		printk("[Myles]%s: not performing hard reset of xcsi2rxss...\n", __func__);
+		printk("[Shiroha]%s: not performing hard reset of xcsi2rxss...\n", __func__);
 	}
 
 	xcsi2rxss_reset(&xcsi2rxss->core);
@@ -2223,7 +2223,7 @@ static int xcsi2rxss_probe(struct platform_device *pdev)
 	xcsi2rxss->streaming = false;
 	xcsi2rxss->suspended = false;
 
-    myles_printk("[myles]xcsi2rxss_probe: xcsi2rxss is probed.\n");
+    shiroha_printk("[shiroha]xcsi2rxss_probe: xcsi2rxss is probed.\n");
 
 	return 0;
 

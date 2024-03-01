@@ -545,7 +545,7 @@ static const struct of_device_id xilinx_frmbuf_of_ids[] = {
 	{/* end of list */}
 };
 
-// Myles secure IO
+// Shiroha secure IO
 #include <linux/dma-mapping.h>
 dma_addr_t dma_handle_4_fbwriter;
 u64 iomem_addr_fbwriter = 0;
@@ -580,7 +580,7 @@ void check_and_switch_to_next_presets_4_fbwriter(void)
 						fbwriter_init_preset_size, fbwriter_init_preset_addr, fbwriter_init_preset_data))
 				{
 					++fbwriter_replay_status;
-					printk("[Myles]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
+					printk("[Shiroha]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
 				}
 				break;
 			case 1:
@@ -588,7 +588,7 @@ void check_and_switch_to_next_presets_4_fbwriter(void)
 						fbwriter_start_preset_size, fbwriter_start_preset_addr, fbwriter_start_preset_data))
 				{
 					++fbwriter_replay_status;
-					printk("[Myles]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
+					printk("[Shiroha]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
 				}
 				break;
 			case 2:
@@ -596,13 +596,13 @@ void check_and_switch_to_next_presets_4_fbwriter(void)
 						fbwriter_stop_preset_size, fbwriter_stop_preset_addr, fbwriter_stop_preset_data))
 				{
 					++fbwriter_replay_status;
-					printk("[Myles]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
+					printk("[Shiroha]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
 				}
 				break;
 		}
 	}
 
-	// printk("[Myles]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
+	// printk("[Shiroha]%s: we have now switched to status: %d.\n", __func__, fbwriter_replay_status);
 }
 
 static inline u32 frmbuf_read_d(struct xilinx_frmbuf_chan *chan, u32 reg)
@@ -615,7 +615,7 @@ static inline u32 frmbuf_read_d(struct xilinx_frmbuf_chan *chan, u32 reg)
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_READ, 32, reg, 0, &data_to_return);
 		if (replay_result == -1)
 		{
-			printk("[Myles]%s: replay error at counter: %d (status: %d),\
+			printk("[Shiroha]%s: replay error at counter: %d (status: %d),\
 				recorded type: %d, size: %d, addr: 0x%08x, val: 0x%08x;\
 				requested type: %d, size: addr: 0x%08x, val: 0x%08x.\n", 
 				__func__, replay_counter, fbwriter_replay_status,
@@ -627,7 +627,7 @@ static inline u32 frmbuf_read_d(struct xilinx_frmbuf_chan *chan, u32 reg)
 		}
 		// else
 		// {
-		// 	printk("[Myles]%s: replay at counter: %d (status: %d), \
+		// 	printk("[Shiroha]%s: replay at counter: %d (status: %d), \
 		// 		type: %d, size: %d, addr: 0x%08x, val: 0x%08x.\n", 
 		// 		__func__, replay_counter-1, fbwriter_replay_status, 
 		// 		current_replay_preset_cmd_type[replay_counter-1], 
@@ -650,7 +650,7 @@ static inline u32 frmbuf_read_d(struct xilinx_frmbuf_chan *chan, u32 reg)
     {
         temp_reading_data = ioread32(iomem_addr_fbwriter + 4);
     }
-    // printk("[Myles]%s: reading from addr: 0x%08x, data: 0x%08x.\n", __func__, reg, temp_reading_data);
+    // printk("[Shiroha]%s: reading from addr: 0x%08x, data: 0x%08x.\n", __func__, reg, temp_reading_data);
    
 	// Record
 	// lock_irq_status_recording_mutex(1);
@@ -677,7 +677,7 @@ static inline void frmbuf_write_d(struct xilinx_frmbuf_chan *chan, u32 reg,
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_WRITE, 32, reg, value, &data_to_return);
 		if (replay_result == -1)
 		{
-			printk("[Myles]%s: replay error at counter: %d (status: %d),\
+			printk("[Shiroha]%s: replay error at counter: %d (status: %d),\
 				recorded type: %d, size: %d, addr: 0x%08x, val: 0x%08x;\
 				requested type: %d, size: addr: 0x%08x, val: 0x%08x.\n", 
 				__func__, replay_counter, fbwriter_replay_status,
@@ -689,7 +689,7 @@ static inline void frmbuf_write_d(struct xilinx_frmbuf_chan *chan, u32 reg,
 		}
 		// else
 		// {
-		// 	printk("[Myles]%s: replay at counter: %d (status: %d), \
+		// 	printk("[Shiroha]%s: replay at counter: %d (status: %d), \
 		// 		type: %d, size: %d, addr: 0x%08x, val: 0x%08x.\n", 
 		// 		__func__, replay_counter-1, fbwriter_replay_status, 
 		// 		current_replay_preset_cmd_type[replay_counter-1], 
@@ -718,7 +718,7 @@ static inline void frmbuf_write_d(struct xilinx_frmbuf_chan *chan, u32 reg,
         done_indicator = ioread32(iomem_addr_fbwriter + 16);
     }
 
-    // printk("[Myles]%s: writing to addr: 0x%08x, data: 0x%08x.\n", __func__, reg, value);
+    // printk("[Shiroha]%s: writing to addr: 0x%08x, data: 0x%08x.\n", __func__, reg, value);
 
 	// unlock for recording
 	// lock_recording_mutex(0);
@@ -736,7 +736,7 @@ static inline void frmbuf_writeq_d(struct xilinx_frmbuf_chan *chan, u32 reg,
 	frmbuf_write_d(chan, reg, lower_32_bits(value));
 	frmbuf_write_d(chan, reg + 4, upper_32_bits(value));
 
-    // printk("[Myles]%s: (64)writing to addr: 0x%08x, data: 0x%016llx.\n", __func__, reg, value);
+    // printk("[Shiroha]%s: (64)writing to addr: 0x%08x, data: 0x%016llx.\n", __func__, reg, value);
 }
 
 static inline void frmbuf_writeq(struct xilinx_frmbuf_chan *chan, u32 reg,
@@ -745,7 +745,7 @@ static inline void frmbuf_writeq(struct xilinx_frmbuf_chan *chan, u32 reg,
 	frmbuf_write(chan, reg, lower_32_bits(value));
 	frmbuf_write(chan, reg + 4, upper_32_bits(value));
 
-    // printk("[Myles]%s: (64)writing to addr: 0x%08x, data: 0x%016llx.\n", __func__, reg, value);
+    // printk("[Shiroha]%s: (64)writing to addr: 0x%08x, data: 0x%016llx.\n", __func__, reg, value);
 }
 
 static void writeq_addr_d(struct xilinx_frmbuf_chan *chan, u32 reg,
@@ -884,7 +884,7 @@ static int frmbuf_verify_format(struct dma_chan *chan, u32 fourcc, u32 type)
 			return -EINVAL;
 
 		xil_chan->vid_fmt = &xilinx_frmbuf_formats[i];
-		// printk("[Myles]%s: format is decided to be %s.\n", __func__, xil_chan->vid_fmt->dts_name);
+		// printk("[Shiroha]%s: format is decided to be %s.\n", __func__, xil_chan->vid_fmt->dts_name);
 		return 0;
 	}
 	return -EINVAL;
@@ -1146,7 +1146,7 @@ static void xilinx_frmbuf_free_descriptors(struct xilinx_frmbuf_chan *chan)
  */
 static void xilinx_frmbuf_free_chan_resources(struct dma_chan *dchan)
 {
-	printk("[Myles]%s: called.\n", __func__);
+	printk("[Shiroha]%s: called.\n", __func__);
 
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(dchan);
 
@@ -1175,7 +1175,7 @@ static void xilinx_frmbuf_chan_desc_cleanup(struct xilinx_frmbuf_chan *chan)
 		callback_param = desc->async_tx.callback_param;
 		if (callback) {
 
-			// printk("[Myles]%s: calling callback: %pF at address: %p\n", __func__, callback, callback);
+			// printk("[Shiroha]%s: calling callback: %pF at address: %p\n", __func__, callback, callback);
 
 			spin_unlock_irqrestore(&chan->lock, flags);
 			callback(callback_param);
@@ -1209,7 +1209,7 @@ static void xilinx_frmbuf_do_tasklet(unsigned long data)
  */
 static int xilinx_frmbuf_alloc_chan_resources(struct dma_chan *dchan)
 {
-	printk("[Myles]%s: called.\n", __func__);
+	printk("[Shiroha]%s: called.\n", __func__);
 	dma_cookie_init(dchan);
 
 	return 0;
@@ -1227,7 +1227,7 @@ static enum dma_status xilinx_frmbuf_tx_status(struct dma_chan *dchan,
 					       dma_cookie_t cookie,
 					       struct dma_tx_state *txstate)
 {
-	printk("[Myles]%s: called.\n", __func__);
+	printk("[Shiroha]%s: called.\n", __func__);
 
 	return dma_cookie_status(dchan, cookie, txstate);
 }
@@ -1254,7 +1254,7 @@ static void xilinx_frmbuf_start(struct xilinx_frmbuf_chan *chan, u8 io_option)
 	// frmbuf_set(chan, XILINX_FRMBUF_CTRL_OFFSET,
 	// 		XILINX_FRMBUF_CTRL_AP_START |
 	// 		chan->mode);
-	// printk("[Myles]%s: frmbuf is starting on mode: %d.\n", __func__, chan->mode);
+	// printk("[Shiroha]%s: frmbuf is starting on mode: %d.\n", __func__, chan->mode);
 	if (io_option && (!secure_cam_is_in_tcs_mode))
 		frmbuf_set_d(chan, XILINX_FRMBUF_CTRL_OFFSET,
 				XILINX_FRMBUF_CTRL_AP_START |
@@ -1343,7 +1343,7 @@ static void xilinx_frmbuf_start_transfer(struct xilinx_frmbuf_chan *chan, u8 io_
 					desc->hw.chroma_plane_addr);
 		} else 
 		{
-			printk("[Myles]%s: DEBUGGING ERROR...\n", __func__);
+			printk("[Shiroha]%s: DEBUGGING ERROR...\n", __func__);
 			chan->write_addr(chan, XILINX_FRMBUF_ADDR_OFFSET,
 					desc->hw.luma_plane_addr);
 			chan->write_addr(chan, XILINX_FRMBUF_ADDR2_OFFSET,
@@ -1366,12 +1366,12 @@ static void xilinx_frmbuf_start_transfer(struct xilinx_frmbuf_chan *chan, u8 io_
 	// if (chan->direction == DMA_MEM_TO_DEV && chan->hw_fid)
 	// {
 	// 	frmbuf_write_d(chan, XILINX_FRMBUF_FID_OFFSET, desc->fid);
-	// 	printk("[Myles]%s: desc->fid: %d.\n", __func__, desc->fid);
+	// 	printk("[Shiroha]%s: desc->fid: %d.\n", __func__, desc->fid);
 	// }
 		// frmbuf_write(chan, XILINX_FRMBUF_FID_OFFSET, desc->fid);
 
     // if (chan->direction == DMA_DEV_TO_MEM) {
-    //     myles_printk("[myles]%s: luma_plane_addr: 0x%lx, chroma_plane_addr: 0x%lx, vsize: %d, hsize: %d, stride: %d, format_id: %d.\n", \
+    //     shiroha_printk("[shiroha]%s: luma_plane_addr: 0x%lx, chroma_plane_addr: 0x%lx, vsize: %d, hsize: %d, stride: %d, format_id: %d.\n", \
     //                     __func__, desc->hw.luma_plane_addr, desc->hw.chroma_plane_addr, desc->hw.vsize, desc->hw.hsize, desc->hw.stride, chan->vid_fmt->id);
     // }
 
@@ -1453,7 +1453,7 @@ static irqreturn_t xilinx_frmbuf_irq_handler(int irq, void *data)
 	// /* Check if callback function needs to be called early */
 	// desc = chan->staged_desc;
 	// if (desc && desc->earlycb == EARLY_CALLBACK) {
-	// 	// printk("[Myles]%s: EARLY_CALLBACK...\n", __func__);
+	// 	// printk("[Shiroha]%s: EARLY_CALLBACK...\n", __func__);
 	// 	callback = desc->async_tx.callback;
 	// 	callback_param = desc->async_tx.callback_param;
 	// 	if (callback) {
@@ -1463,7 +1463,7 @@ static irqreturn_t xilinx_frmbuf_irq_handler(int irq, void *data)
 	// }
 
 	// if (status & XILINX_FRMBUF_ISR_AP_READY_IRQ) {
-	// 	// printk("[Myles]%s: XILINX_FRMBUF_ISR_AP_READY_IRQ...\n", __func__);
+	// 	// printk("[Shiroha]%s: XILINX_FRMBUF_ISR_AP_READY_IRQ...\n", __func__);
 	// 	spin_lock(&chan->lock);
 	// 	chan->idle = true;
 	// 	if (chan->active_desc) {
@@ -1474,11 +1474,11 @@ static irqreturn_t xilinx_frmbuf_irq_handler(int irq, void *data)
 	// 	spin_unlock(&chan->lock);
 	// } else 
 	// {
-	// 	printk("[Myles]%s: warning, non ready irq detected...\n", __func__);
+	// 	printk("[Shiroha]%s: warning, non ready irq detected...\n", __func__);
 	// }
 
 	// FIXME: temp hack to get interrupt handled by MB
-	// printk("[Myles]%s: irq...\n", __func__);
+	// printk("[Shiroha]%s: irq...\n", __func__);
 	spin_lock(&chan->lock);
 	chan->idle = true;
 	if (chan->active_desc) {
@@ -1491,7 +1491,7 @@ static irqreturn_t xilinx_frmbuf_irq_handler(int irq, void *data)
 	tasklet_schedule(&chan->tasklet);
 
 	// Clear the interrupt
-	// printk("[Myles]%s: clear irq status 1.\n", __func__);
+	// printk("[Shiroha]%s: clear irq status 1.\n", __func__);
 	clear_irq_status(iomem_addr_fbwriter);
 
 	return IRQ_HANDLED;
@@ -1509,13 +1509,13 @@ static dma_cookie_t xilinx_frmbuf_tx_submit(struct dma_async_tx_descriptor *tx)
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(tx->chan);
 
     // if (chan->direction == DMA_DEV_TO_MEM) {
-    //     myles_printk("[myles]%s: chan_id: %d, luma_plane_addr: 0x%lx, chroma_plane_addr: 0x%lx, vsize: %d, hsize: %d, stride: %d.\n", \
+    //     shiroha_printk("[shiroha]%s: chan_id: %d, luma_plane_addr: 0x%lx, chroma_plane_addr: 0x%lx, vsize: %d, hsize: %d, stride: %d.\n", \
     //                     __func__, tx->chan->chan_id, desc->hw.luma_plane_addr, desc->hw.chroma_plane_addr, desc->hw.vsize, desc->hw.hsize, desc->hw.stride);
     // }
 
-	// myles_printk("[myles]%s: before dumping stack.\n", __func__);
+	// shiroha_printk("[shiroha]%s: before dumping stack.\n", __func__);
     // dump_stack();
-    // myles_printk("[myles]%s: after dumping stack.\n", __func__);
+    // shiroha_printk("[shiroha]%s: after dumping stack.\n", __func__);
 
 	dma_cookie_t cookie;
 	unsigned long flags;
@@ -1542,11 +1542,11 @@ xilinx_frmbuf_dma_prep_interleaved(struct dma_chan *dchan,
 				   struct dma_interleaved_template *xt,
 				   unsigned long flags)
 {
-    // myles_printk("[myles]%s: before dumping stack.\n", __func__);
+    // shiroha_printk("[shiroha]%s: before dumping stack.\n", __func__);
     // dump_stack();
-    // myles_printk("[myles]%s: after dumping stack.\n", __func__);
+    // shiroha_printk("[shiroha]%s: after dumping stack.\n", __func__);
 
-    // myles: trick to assign value manually
+    // shiroha: trick to assign value manually
     if (xt->dir == DMA_DEV_TO_MEM) { 
 
         xt->dst_start = 0xc400000;
@@ -1554,14 +1554,14 @@ xilinx_frmbuf_dma_prep_interleaved(struct dma_chan *dchan,
     }
 
     // if (xt->dir == DMA_DEV_TO_MEM) {
-    //     myles_printk("[myles]%s: chan_id: %d, src_start: 0x%lx, dst_start: 0x%lx, \
+    //     shiroha_printk("[shiroha]%s: chan_id: %d, src_start: 0x%lx, dst_start: 0x%lx, \
     //                     src_inc: %d, dst_inc: %d, src_sgl: %d, dst_sgl: %d, \
     //                     numf: %d, frame_size: %d, \
     //                     data_chunk_size: %d, data_chunk_icg: %d, data_chunk_dst_icg: %d, data_chunk_src_icg: %d.\n", __func__, \
     //                     dchan->chan_id, xt->src_start, xt->dst_start, xt->src_inc, \
     //                     xt->dst_inc, xt->src_sgl, xt->dst_sgl, xt->numf, xt->frame_size, \
     //                     xt->sgl[0].size, xt->sgl[0].icg, xt->sgl[0].dst_icg, xt->sgl[0].src_icg);
-    //     // printk("[myles]%s: chan_id: %d, src_start: 0x%lx, dst_start: 0x%lx, \
+    //     // printk("[shiroha]%s: chan_id: %d, src_start: 0x%lx, dst_start: 0x%lx, \
     //     //                 src_inc: %d, dst_inc: %d, src_sgl: %d, dst_sgl: %d, \
     //     //                 numf: %d, frame_size: %d, \
     //     //                 data_chunk_size: %d, data_chunk_icg: %d, data_chunk_dst_icg: %d, data_chunk_src_icg: %d.\n", __func__, \
@@ -1635,7 +1635,7 @@ xilinx_frmbuf_dma_prep_interleaved(struct dma_chan *dchan,
 	}
 
     // if (xt->dir == DMA_DEV_TO_MEM) {
-    //     myles_printk("[myles]%s: xilinx_frmbuf_desc_hw: luma_plane_addr: 0x%lx, chroma_plane_addr: 0x%lx, vsize: %d, hsize: %d, stride: %d.\n", \
+    //     shiroha_printk("[shiroha]%s: xilinx_frmbuf_desc_hw: luma_plane_addr: 0x%lx, chroma_plane_addr: 0x%lx, vsize: %d, hsize: %d, stride: %d.\n", \
     //                     __func__, hw->luma_plane_addr, hw->chroma_plane_addr, hw->vsize, hw->hsize, hw->stride);
     // }
 
@@ -1655,7 +1655,7 @@ error:
  */
 static int xilinx_frmbuf_terminate_all(struct dma_chan *dchan)
 {
-	printk("[Myles]%s: going to terminate everything.\n", __func__);
+	printk("[Shiroha]%s: going to terminate everything.\n", __func__);
 
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(dchan);
 
@@ -1706,7 +1706,7 @@ static void xilinx_frmbuf_synchronize(struct dma_chan *dchan)
 {
 	struct xilinx_frmbuf_chan *chan = to_xilinx_chan(dchan);
 
-	printk("[Myles]%s: going to kill tasklet.\n", __func__);
+	printk("[Shiroha]%s: going to kill tasklet.\n", __func__);
 	tasklet_kill(&chan->tasklet);
 }
 
@@ -1764,18 +1764,18 @@ static int xilinx_frmbuf_chan_probe(struct xilinx_frmbuf_device *xdev,
 	}
 
     // if ((enum dma_transfer_direction)xdev->cfg->direction == DMA_DEV_TO_MEM) {
-    //     myles_printk("[myles]%s: dma_addr_size: %d, size of dma_addr_t: %d.\n", __func__, dma_addr_size, sizeof(dma_addr_t));
+    //     shiroha_printk("[shiroha]%s: dma_addr_size: %d, size of dma_addr_t: %d.\n", __func__, dma_addr_size, sizeof(dma_addr_t));
     // }
 
 	if (dma_addr_size == 64 && sizeof(dma_addr_t) == sizeof(u64))
 	{
-		printk("[Myles]%s: chan->write_addr cannot be bound to 64 bit...\n", __func__);
+		printk("[Shiroha]%s: chan->write_addr cannot be bound to 64 bit...\n", __func__);
 		return err;
 		// chan->write_addr = writeq_addr;
 	}
 	else
 	{
-		printk("[Myles]%s: chan->write_addr is bound to 32 bit...\n", __func__);
+		printk("[Shiroha]%s: chan->write_addr is bound to 32 bit...\n", __func__);
 		chan->write_addr = write_addr;
 	}
 
@@ -1823,7 +1823,7 @@ static int xilinx_frmbuf_chan_probe(struct xilinx_frmbuf_device *xdev,
  */
 static int xilinx_frmbuf_probe(struct platform_device *pdev)
 {
-	// Myles: record & replay init
+	// Shiroha: record & replay init
 	init_recording();
 	init_replaying();
 
@@ -1843,13 +1843,13 @@ static int xilinx_frmbuf_probe(struct platform_device *pdev)
 
 	xdev->dev = &pdev->dev;
 
-    // Myles: do secure IO re-config
+    // Shiroha: do secure IO re-config
     if ((iomem_addr_fbwriter == 0) || (iomem_addr_fbwriter == NULL))
     {
         pdev->dev.id = 673;
         // pdev->dev.coherent_dma_mask = -1;
         iomem_addr_fbwriter = dma_alloc_coherent(&pdev->dev, 4096, &dma_handle_4_fbwriter, GFP_KERNEL | GFP_DMA);
-        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75007000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_fbwriter: 0x%016lx...\n", __func__, iomem_addr_fbwriter, iomem_addr_fbwriter == NULL, virt_to_phys(iomem_addr_fbwriter), dma_handle_4_fbwriter);
+        printk("[Shiroha]%s: after dma_alloc_coherent with phy addr: 0x75007000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_fbwriter: 0x%016lx...\n", __func__, iomem_addr_fbwriter, iomem_addr_fbwriter == NULL, virt_to_phys(iomem_addr_fbwriter), dma_handle_4_fbwriter);
     }
 
 	match = of_match_node(xilinx_frmbuf_of_ids, node);

@@ -98,7 +98,7 @@ static int axis_irqcontrol(struct uio_info *dev_info, s32 irq_on)
 static int axis_probe(struct platform_device *pdev)
 {
 
-    myles_printk("[myles]%s: going to probe axis_dma.\n", __func__);
+    shiroha_printk("[shiroha]%s: going to probe axis_dma.\n", __func__);
 
 	struct uio_info *uioinfo = dev_get_platdata(&pdev->dev);
 	struct axis_platdata *priv;
@@ -241,7 +241,7 @@ static int axis_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, priv);
 
-    myles_printk("[myles]%s: axis_dma is probed.\n", __func__);
+    shiroha_printk("[shiroha]%s: axis_dma is probed.\n", __func__);
 
 	return 0;
  bad0:
@@ -253,7 +253,7 @@ static int axis_probe(struct platform_device *pdev)
 		++uiomem;
 	}
 
-    myles_printk("[myles]%s: axis_dma is not probed.\n", __func__);
+    shiroha_printk("[shiroha]%s: axis_dma is not probed.\n", __func__);
 
 	return ret;
 }

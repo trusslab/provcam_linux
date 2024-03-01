@@ -151,7 +151,7 @@ static inline u32 xvip_read(struct xvip_device *xvip, u32 addr)
     // switch (xvip->id)
     // {
     //     case 668:
-    //         printk("[Myles]%s: reading 0x%08x from reg offset 0x%08x of device id: %d.\n", __func__, temp_reading, addr, xvip->id);
+    //         printk("[Shiroha]%s: reading 0x%08x from reg offset 0x%08x of device id: %d.\n", __func__, temp_reading, addr, xvip->id);
     //         break;
     //     case 669:
     //         break;
@@ -163,7 +163,7 @@ static inline u32 xvip_read(struct xvip_device *xvip, u32 addr)
     //         temp_reading = ioread32(xvip->iomem + addr);
     // }
 
-    // // printk("[Myles]%s: reading 0x%08x from reg offset 0x%08x of device id: %d.\n", __func__, temp_reading, addr, xvip->id);
+    // // printk("[Shiroha]%s: reading 0x%08x from reg offset 0x%08x of device id: %d.\n", __func__, temp_reading, addr, xvip->id);
 
     u32 temp_reading = ioread32(xvip->iomem + addr);
 
@@ -175,7 +175,7 @@ static inline void xvip_write(struct xvip_device *xvip, u32 addr, u32 value)
     // switch (xvip->id)
     // {
     //     case 668:
-    //         printk("[Myles]%s: writing 0x%08x to reg offset 0x%08x of device id: %d.\n", __func__, value, addr, xvip->id);
+    //         printk("[Shiroha]%s: writing 0x%08x to reg offset 0x%08x of device id: %d.\n", __func__, value, addr, xvip->id);
     //         break;
     //     case 669:
     //         break;
@@ -187,7 +187,7 @@ static inline void xvip_write(struct xvip_device *xvip, u32 addr, u32 value)
     //         iowrite32(value, xvip->iomem + addr);
     // }
 
-    // // printk("[Myles]%s: writing 0x%08x to reg offset 0x%08x of device id: %d.\n", __func__, value, addr, xvip->id);
+    // // printk("[Shiroha]%s: writing 0x%08x to reg offset 0x%08x of device id: %d.\n", __func__, value, addr, xvip->id);
 
     iowrite32(value, xvip->iomem + addr);
 }

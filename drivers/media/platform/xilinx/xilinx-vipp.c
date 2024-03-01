@@ -820,7 +820,7 @@ static int xvip_composite_probe(struct platform_device *pdev)
 
 	dev_info(xdev->dev, "device registered\n");
 
-    myles_printk("[myles]xvip_composite_probe: xvip_composite is probed.\n");
+    shiroha_printk("[shiroha]xvip_composite_probe: xvip_composite is probed.\n");
 
 	return 0;
 

@@ -2071,7 +2071,7 @@ static int xvip_m2m_probe(struct platform_device *pdev)
 
 	dev_info(xdev->dev, "mem2mem device registered\n");
 
-    myles_printk("[myles]xvip_m2m_probe: xvip_m2m is probed.\n");
+    shiroha_printk("[shiroha]xvip_m2m_probe: xvip_m2m is probed.\n");
 
 	return 0;
 

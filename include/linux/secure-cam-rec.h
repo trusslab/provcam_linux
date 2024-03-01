@@ -8,7 +8,7 @@
 #define IS_ONLY_RECORDING_IRQ 0	// would overwrite the above one when set to 1
 #define RECODING_STATUS_OFFSET 0x1A0
 
-// Myles recording IO
+// Shiroha recording IO
 static struct mutex recording_mutex;
 static struct mutex irq_status_recording_mutex;
 static u8 is_dealing_with_irq = 0;

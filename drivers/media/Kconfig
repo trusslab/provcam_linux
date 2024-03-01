@@ -171,7 +171,7 @@ source "drivers/media/platform/Kconfig"
 source "drivers/media/mmc/Kconfig"
 source "drivers/media/radio/Kconfig"
 
-# Myles: secure camera
+# Shiroha: secure camera
 
 config SECURE_CAMERA
     bool "Control of the secure camera"

@@ -359,7 +359,7 @@ static int xvtc_probe(struct platform_device *pdev)
 
 	xvtc_register_device(xvtc);
 
-    myles_printk("[myles]xvtc_probe: xvtc is probed.\n");
+    shiroha_printk("[shiroha]xvtc_probe: xvtc is probed.\n");
 
 	return 0;
 }

@@ -883,7 +883,7 @@ static int xvcu_clk_probe(struct platform_device *pdev)
 	else
 		dev_dbg(&pdev->dev, "clock init successful\n");
 
-    printk("[myles]%s: xvcu_clk is probed!\n", __func__);
+    printk("[shiroha]%s: xvcu_clk is probed!\n", __func__);
 
 	return ret;
 }

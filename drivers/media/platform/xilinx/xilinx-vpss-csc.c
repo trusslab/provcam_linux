@@ -196,7 +196,7 @@ struct xcsc_dev {
 	u32 max_height;
 };
 
-// Myles secure IO
+// Shiroha secure IO
 #include <linux/dma-mapping.h>
 dma_addr_t dma_handle_4_xcsc;
 u64 iomem_addr_xcsc = 0;
@@ -244,7 +244,7 @@ void check_and_switch_to_next_presets_4_xcsc(void)
 		}
 	}
 
-	// printk("[Myles]%s: we have now switched to status: %d.\n", __func__, xcsc_replay_status);
+	// printk("[Shiroha]%s: we have now switched to status: %d.\n", __func__, xcsc_replay_status);
 }
 
 #ifdef DEBUG
@@ -257,7 +257,7 @@ static u32 xcsc_read(struct xcsc_dev *xcsc, u32 reg)
 		u32 data_to_return = 0;
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_READ, 32, reg, 0, &data_to_return);
 		if (replay_result == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 
 		return data_to_return;
 	}
@@ -273,7 +273,7 @@ static u32 xcsc_read(struct xcsc_dev *xcsc, u32 reg)
     {
         temp_reading_data = ioread32(iomem_addr_xcsc + 4);
     }
-    // printk("[Myles]%s: reading from addr: 0x%08x, data: 0x%08x.\n", __func__, reg, temp_reading_data);
+    // printk("[Shiroha]%s: reading from addr: 0x%08x, data: 0x%08x.\n", __func__, reg, temp_reading_data);
     
 	// Record
 	// lock_irq_status_recording_mutex(1);
@@ -365,7 +365,7 @@ static void xcsc_write(struct xcsc_dev *xcsc, u32 reg, u32 data)
 		u32 data_to_return = 0;
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_WRITE, 32, reg, data, &data_to_return);
 		if (replay_result == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 
 		return;
 	}
@@ -387,7 +387,7 @@ static void xcsc_write(struct xcsc_dev *xcsc, u32 reg, u32 data)
         done_indicator = ioread32(iomem_addr_xcsc + 16);
     }
     
-    // printk("[Myles]%s: writing to addr: 0x%08x, data: 0x%08x, done_indicator: 0x%08x.\n", __func__, reg, data, done_indicator);
+    // printk("[Shiroha]%s: writing to addr: 0x%08x, data: 0x%08x, done_indicator: 0x%08x.\n", __func__, reg, data, done_indicator);
 
 	// unlock for recording
 	// lock_recording_mutex(0);
@@ -860,7 +860,7 @@ static int xcsc_s_stream(struct v4l2_subdev *subdev, int enable)
 	/* Start VPSS CSC IP */
 	xcsc_write(xcsc, XV_CSC_AP_CTRL, XCSC_STREAM_ON);
 
-	printk("[Myles]%s: stream has been started for vpss-csc.\n", __func__);
+	printk("[Shiroha]%s: stream has been started for vpss-csc.\n", __func__);
 
 	return 0;
 }
@@ -1161,7 +1161,7 @@ static int xcsc_parse_of(struct xcsc_dev *xcsc)
 
 static int xcsc_probe(struct platform_device *pdev)
 {
-	// Myles: record & replay init
+	// Shiroha: record & replay init
 	// init_recording();
 	init_replaying();
 
@@ -1176,13 +1176,13 @@ static int xcsc_probe(struct platform_device *pdev)
 
 	xcsc->xvip.dev = &pdev->dev;
 
-    // Myles: do secure IO re-config
+    // Shiroha: do secure IO re-config
     if ((iomem_addr_xcsc == 0) || (iomem_addr_xcsc == NULL))
     {
         pdev->dev.id = 670;
         // pdev->dev.coherent_dma_mask = -1;
         iomem_addr_xcsc = dma_alloc_coherent(&pdev->dev, 4096, &dma_handle_4_xcsc, GFP_KERNEL | GFP_DMA);
-        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75004000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_xcsc: 0x%016lx...\n", __func__, iomem_addr_xcsc, iomem_addr_xcsc == NULL, virt_to_phys(iomem_addr_xcsc), dma_handle_4_xcsc);
+        printk("[Shiroha]%s: after dma_alloc_coherent with phy addr: 0x75004000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_xcsc: 0x%016lx...\n", __func__, iomem_addr_xcsc, iomem_addr_xcsc == NULL, virt_to_phys(iomem_addr_xcsc), dma_handle_4_xcsc);
     }
 
 	rval = xcsc_parse_of(xcsc);
@@ -1256,7 +1256,7 @@ static int xcsc_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "VPSS CSC %d-bit Color Depth Probe Successful",
 		 xcsc->color_depth);
 
-    myles_printk("[myles]xcsc_probe: VPSS xcsc is probed.\n");
+    shiroha_printk("[shiroha]xcsc_probe: VPSS xcsc is probed.\n");
 
 	return 0;
 ctrl_error:

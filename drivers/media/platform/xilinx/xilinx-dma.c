@@ -168,7 +168,7 @@ static int xvip_pipeline_validate(struct xvip_pipeline *pipe,
 
 	media_graph_walk_start(&graph, entity);
 
-    myles_printk("[myles]%s: media_graph_walk started, %s", __func__, entity->name);
+    shiroha_printk("[shiroha]%s: media_graph_walk started, %s", __func__, entity->name);
 
 	while ((entity = media_graph_walk_next(&graph))) {
 		struct xvip_dma *dma;
@@ -1434,7 +1434,7 @@ int xvip_dma_init(struct xvip_composite_device *xdev, struct xvip_dma *dma,
 		goto error;
 	}
 
-    myles_printk("[myles]xvip_dma_init: xvip_dma is probed.\n");
+    shiroha_printk("[shiroha]xvip_dma_init: xvip_dma is probed.\n");
 
 	return 0;
 

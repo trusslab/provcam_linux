@@ -9,7 +9,7 @@ obj-$(CONFIG_XILINX_PS_PCIE_DMA) += xilinx_ps_pcie_dma.o
 obj-$(CONFIG_XILINX_PS_PCIE_DMA_TEST) += xilinx_ps_pcie_dma_client.o
 obj-$(CONFIG_XILINX_FRMBUF) += xilinx_frmbuf.o
 
-# axis_dma (Myles)
+# axis_dma (Shiroha)
 
 obj-m  := axis.o
 

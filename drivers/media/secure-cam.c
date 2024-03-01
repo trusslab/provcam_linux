@@ -52,25 +52,25 @@ static void set_mb_to_print_log(void)
 
 static int cam_open(struct inode *inode, struct file *file)
 {
-        pr_info("[Myles]: Device File Opened...!!!\n");
+        pr_info("[Shiroha]: Device File Opened...!!!\n");
         return 0;
 }
 
 static int cam_release(struct inode *inode, struct file *file)
 {
-        pr_info("[Myles]: Device File Closed...!!!\n");
+        pr_info("[Shiroha]: Device File Closed...!!!\n");
         return 0;
 }
 
 static ssize_t cam_read(struct file *filp, char __user *buf, size_t len, loff_t *off)
 {
-        pr_info("[Myles]: Read Function\n");
+        pr_info("[Shiroha]: Read Function\n");
         return 0;
 }
 
 static ssize_t cam_write(struct file *filp, const char __user *buf, size_t len, loff_t *off)
 {
-        pr_info("[Myles]: Write function\n");
+        pr_info("[Shiroha]: Write function\n");
         return len;
 }
 
@@ -100,7 +100,7 @@ static long cam_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
                     break;
                 }
                 default:
-                        pr_info("[Myles]%s: unknown ioctl is called %d\n", __func__, cmd);
+                        pr_info("[Shiroha]%s: unknown ioctl is called %d\n", __func__, cmd);
                         break;
         }
         return 0;
@@ -118,7 +118,7 @@ static struct file_operations fops =
 
 static int __init init_secure_cam(void)
 {
-	printk(KERN_INFO "[Myles]%s: start initing secure camera.\n", __func__);
+	printk(KERN_INFO "[Shiroha]%s: start initing secure camera.\n", __func__);
 
     static dev_t first;
     static struct class *cl;
@@ -127,29 +127,29 @@ static int __init init_secure_cam(void)
 
 	if ((ret = alloc_chrdev_region(&first, 0, 1, "secure")) < 0)
 	{
-	    printk(KERN_INFO "[Myles]%s: error in alloc_chrdev_region: %d.\n", __func__, ret);
+	    printk(KERN_INFO "[Shiroha]%s: error in alloc_chrdev_region: %d.\n", __func__, ret);
 		return ret;
 	}
 	if (IS_ERR(cl = class_create(THIS_MODULE, "camera")))
 	{
 		unregister_chrdev_region(first, 1);
-	    printk(KERN_INFO "[Myles]%s: error in class_create.\n", __func__);
+	    printk(KERN_INFO "[Shiroha]%s: error in class_create.\n", __func__);
 		return PTR_ERR(cl);
 	}
 	if (IS_ERR(dummy_dev = device_create(cl, NULL, first, NULL, "mynull")))
 	{
 		class_destroy(cl);
 		unregister_chrdev_region(first, 1);
-	    printk(KERN_INFO "[Myles]%s: error in device_create.\n", __func__);
+	    printk(KERN_INFO "[Shiroha]%s: error in device_create.\n", __func__);
 		return PTR_ERR(dummy_dev);
 	}
 
-    // Myles: do secure IO re-config
+    // Shiroha: do secure IO re-config
     if ((iomem_addr_secure_cam == 0) || (iomem_addr_secure_cam == NULL))
     {
         dummy_dev->id = 672;
         iomem_addr_secure_cam = dma_alloc_coherent(dummy_dev, 4096, &dma_handle_4_secure_cam, GFP_KERNEL | GFP_DMA);
-        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75006000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_secure_cam: 0x%016lx...\n", __func__, iomem_addr_secure_cam, iomem_addr_secure_cam == NULL, virt_to_phys(iomem_addr_secure_cam), dma_handle_4_secure_cam);
+        printk("[Shiroha]%s: after dma_alloc_coherent with phy addr: 0x75006000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_secure_cam: 0x%016lx...\n", __func__, iomem_addr_secure_cam, iomem_addr_secure_cam == NULL, virt_to_phys(iomem_addr_secure_cam), dma_handle_4_secure_cam);
     }
 
     // Do init
@@ -163,21 +163,21 @@ static int __init init_secure_cam(void)
             break;
     }
     set_mb_to_print_log();
-    printk(KERN_INFO "[Myles]%s: init sucess, current status: %d.\n", __func__, get_status());
+    printk(KERN_INFO "[Shiroha]%s: init sucess, current status: %d.\n", __func__, get_status());
 
 	return 0;
 }
 
 static void __exit cleanup_secure_cam(void)
 {
-    // Myles: TO-DO
-	printk(KERN_INFO "[Myles]%s: cleaning secure camera...\n");
+    // Shiroha: TO-DO
+	printk(KERN_INFO "[Shiroha]%s: cleaning secure camera...\n");
 }
 
 module_init(init_secure_cam);
 module_exit(cleanup_secure_cam);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Yuxin (Myles) Liu <yuxin.liu@uci.edu>");
+MODULE_AUTHOR("Yuxin (Shiroha) Liu <yuxin.liu@uci.edu>");
 MODULE_DESCRIPTION("Secure camera on Xilinx FPGA");
 

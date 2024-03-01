@@ -109,7 +109,7 @@ static int xvcu_core_probe(struct platform_device *pdev)
 
 	dev_dbg(&pdev->dev, "Successfully added MFD devices\n");
 
-    printk("[myles]%s: vcu_core is probed.\n", __func__);
+    printk("[shiroha]%s: vcu_core is probed.\n", __func__);
 
 	return 0;
 

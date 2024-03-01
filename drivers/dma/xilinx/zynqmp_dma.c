@@ -802,7 +802,7 @@ static struct dma_async_tx_descriptor *zynqmp_dma_prep_memcpy(
 				struct dma_chan *dchan, dma_addr_t dma_dst,
 				dma_addr_t dma_src, size_t len, ulong flags)
 {
-    // myles_printk("[myles]%s: chan_id: %d, dma_src: 0x%lx, dma_dst: 0x%lx, transfer length: %d.\n", __func__, \
+    // shiroha_printk("[shiroha]%s: chan_id: %d, dma_src: 0x%lx, dma_dst: 0x%lx, transfer length: %d.\n", __func__, \
     //                 dchan->chan_id, dma_src, dma_dst, len);
 
 	struct zynqmp_dma_chan *chan;

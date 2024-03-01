@@ -2895,7 +2895,7 @@ static int allegro_firmware_request_nowait(struct allegro_dev *dev)
 static int allegro_probe(struct platform_device *pdev)
 {
 
-    myles_printk("[myles]allegro_probe: attempt to probe allegro(likely encoder).\n");
+    shiroha_printk("[shiroha]allegro_probe: attempt to probe allegro(likely encoder).\n");
 
 	struct allegro_dev *dev;
 	struct resource *res, *sram_res;
@@ -2975,7 +2975,7 @@ static int allegro_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-    myles_printk("[myles]allegro_probe: allegro(likely encoder) is probed.\n");
+    shiroha_printk("[shiroha]allegro_probe: allegro(likely encoder) is probed.\n");
 
 	return 0;
 }

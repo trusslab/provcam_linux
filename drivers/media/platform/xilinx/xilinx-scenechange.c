@@ -154,7 +154,7 @@ static int xscd_probe(struct platform_device *pdev)
 
 	dev_info(xscd->dev, "scene change detect device found!\n");
 
-    myles_printk("[myles]xscd_probe: xscd is probed.\n");
+    shiroha_printk("[shiroha]xscd_probe: xscd is probed.\n");
 
 	return 0;
 }

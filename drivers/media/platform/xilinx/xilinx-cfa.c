@@ -349,7 +349,7 @@ static int xcfa_probe(struct platform_device *pdev)
 		goto error;
 	}
 
-    myles_printk("[myles]xcfa_probe: xcfa is probed.\n");
+    shiroha_printk("[shiroha]xcfa_probe: xcfa is probed.\n");
     
 	return 0;
 

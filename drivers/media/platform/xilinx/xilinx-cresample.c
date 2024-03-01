@@ -399,7 +399,7 @@ static int xcresample_probe(struct platform_device *pdev)
 		goto error;
 	}
 
-    myles_printk("[myles]xcresample_probe: xcresample is probed.\n");
+    shiroha_printk("[shiroha]xcresample_probe: xcresample is probed.\n");
 
 	return 0;
 

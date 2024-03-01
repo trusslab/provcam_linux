@@ -182,30 +182,30 @@ struct xiic_i2c {
 static int xiic_start_xfer(struct xiic_i2c *i2c);
 static void __xiic_start_xfer(struct xiic_i2c *i2c);
 
-// Myles secure IO
+// Shiroha secure IO
 #include <linux/dma-mapping.h>
 dma_addr_t dma_handle_4_i2c;
 u64 iomem_addr_i2c = 0;
 int should_keep_printing = 1;
 int keep_printing_counter = 0;
 
-// Myles replay IO
+// Shiroha replay IO
 #include "i2c-xiic-presets.h"
 #include <linux/secure-cam-rep.h>
 // u32 replay_counter = 0;
 // struct mutex replaying_mutex;
 
-// Myles debug IO
+// Shiroha debug IO
 u32 mismatched_counter = 0;
 u32 last_mismatched_type = 0;
 u32 last_mismatched_addr = 0;
 u32 last_mismatched_size = 0;
 u32 last_mismatched_data = 0;
 
-// Myles recording IO
+// Shiroha recording IO
 #include<linux/secure-cam-rec.h>
 
-// Myles secure IO functions
+// Shiroha secure IO functions
 static inline u32 i2c_read_unified(u32 addr, u32 size)
 {
 	// Start of replay section
@@ -219,7 +219,7 @@ static inline u32 i2c_read_unified(u32 addr, u32 size)
 		u32 data_to_return = 0;
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_READ, size, addr, 0, &data_to_return);
 		if (replay_result == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 
 		return data_to_return;
 	}
@@ -266,7 +266,7 @@ static inline u32 i2c_read_unified(u32 addr, u32 size)
 			break;
 		}
 		default:
-			printk("[Myles]%s: invalid size: %d\n", __func__, size);
+			printk("[Shiroha]%s: invalid size: %d\n", __func__, size);
 			return 0;
 	}
 
@@ -291,7 +291,7 @@ static inline u32 i2c_write_unified(u32 addr, u32 data, u32 size)
 		u32 data_to_return = 0;
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_WRITE, size, addr, data, &data_to_return);
 		if (replay_result == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 		
 		return;
 	}
@@ -351,7 +351,7 @@ static inline u32 i2c_write_unified(u32 addr, u32 data, u32 size)
 			break;
 		}
 		default:
-			printk("[Myles]%s: invalid size: %d\n", __func__, size);
+			printk("[Shiroha]%s: invalid size: %d\n", __func__, size);
 			return 0;
 	}
 
@@ -404,13 +404,13 @@ static inline void xiic_setreg8(struct xiic_i2c *i2c, int reg, u8 value)
 		// iowrite8(value, i2c->base + reg);
 		i2c_write_8(value, reg);
 	// else
-        // printk("[Myles]%s: no support, replay_counter: %d, mismatched_counter: %d, last_mismatched_type: %d, \
+        // printk("[Shiroha]%s: no support, replay_counter: %d, mismatched_counter: %d, last_mismatched_type: %d, \
 		// 	last_mismatched_addr: 0x%08x, last_mismatched_data: 0x%08x, last_mismatched_size: %d.\n", 
 		// 	__func__, replay_counter, mismatched_counter, last_mismatched_type, last_mismatched_addr, 
 		// 	last_mismatched_data, last_mismatched_size);
 		// iowrite8(value, i2c->base + reg + 3);
 		// i2c_write_8(value, reg + 3);
-    // printk("[Myles]%s: (8)WRITE: addr: 0x%08x, val: 0x%08x.\n", __func__, reg, value);
+    // printk("[Shiroha]%s: (8)WRITE: addr: 0x%08x, val: 0x%08x.\n", __func__, reg, value);
 }
 
 static inline u8 xiic_getreg8(struct xiic_i2c *i2c, int reg)
@@ -421,13 +421,13 @@ static inline u8 xiic_getreg8(struct xiic_i2c *i2c, int reg)
 		// ret = ioread8(i2c->base + reg);
 		ret = i2c_read_8(reg);
 	// else
-        // printk("[Myles]%s: no support, replay_counter: %d, mismatched_counter: %d, last_mismatched_type: %d, \
+        // printk("[Shiroha]%s: no support, replay_counter: %d, mismatched_counter: %d, last_mismatched_type: %d, \
 		// 	last_mismatched_addr: 0x%08x, last_mismatched_data: 0x%08x, last_mismatched_size: %d.\n", 
 		// 	__func__, replay_counter, mismatched_counter, last_mismatched_type, last_mismatched_addr, 
 		// 	last_mismatched_data, last_mismatched_size);
 		// ret = ioread8(i2c->base + reg + 3);
 		// ret = i2c_read_8(reg + 3);
-    // printk("[Myles]%s: (8)READ: addr: 0x%08x, val: 0x%08x.\n", __func__, reg, ret);
+    // printk("[Shiroha]%s: (8)READ: addr: 0x%08x, val: 0x%08x.\n", __func__, reg, ret);
 	return ret;
 }
 
@@ -437,13 +437,13 @@ static inline void xiic_setreg16(struct xiic_i2c *i2c, int reg, u16 value)
 		// iowrite16(value, i2c->base + reg);
 		i2c_write_16(value, reg);
 	// else
-        // printk("[Myles]%s: no support, replay_counter: %d, mismatched_counter: %d, last_mismatched_type: %d, \
+        // printk("[Shiroha]%s: no support, replay_counter: %d, mismatched_counter: %d, last_mismatched_type: %d, \
 		// 	last_mismatched_addr: 0x%08x, last_mismatched_data: 0x%08x, last_mismatched_size: %d.\n", 
 		// 	__func__, replay_counter, mismatched_counter, last_mismatched_type, last_mismatched_addr, 
 		// 	last_mismatched_data, last_mismatched_size);
 		// iowrite16be(value, i2c->base + reg + 2);
 		// i2c_write_16(value, reg + 2);
-    // printk("[Myles]%s: (16)WRITE: addr: 0x%08x, val: 0x%08x.\n", __func__, reg, value);
+    // printk("[Shiroha]%s: (16)WRITE: addr: 0x%08x, val: 0x%08x.\n", __func__, reg, value);
 }
 
 static inline void xiic_setreg32(struct xiic_i2c *i2c, int reg, int value)
@@ -452,13 +452,13 @@ static inline void xiic_setreg32(struct xiic_i2c *i2c, int reg, int value)
 		// iowrite32(value, i2c->base + reg);
 		i2c_write_32(value, reg);
 	// else
-        // printk("[Myles]%s: no support, replay_counter: %d, mismatched_counter: %d, last_mismatched_type: %d, \
+        // printk("[Shiroha]%s: no support, replay_counter: %d, mismatched_counter: %d, last_mismatched_type: %d, \
 		// 	last_mismatched_addr: 0x%08x, last_mismatched_data: 0x%08x, last_mismatched_size: %d.\n", 
 		// 	__func__, replay_counter, mismatched_counter, last_mismatched_type, last_mismatched_addr, 
 		// 	last_mismatched_data, last_mismatched_size);
 		// iowrite32be(value, i2c->base + reg);
 		// i2c_write_32(value, reg);
-    // printk("[Myles]%s: (32)WRITE: addr: 0x%08x, val: 0x%08x.\n", __func__, reg, value);
+    // printk("[Shiroha]%s: (32)WRITE: addr: 0x%08x, val: 0x%08x.\n", __func__, reg, value);
 }
 
 static inline int xiic_getreg32(struct xiic_i2c *i2c, int reg)
@@ -469,13 +469,13 @@ static inline int xiic_getreg32(struct xiic_i2c *i2c, int reg)
 		// ret = ioread32(i2c->base + reg);
 		ret = i2c_read_32(reg);
 	// else
-        // printk("[Myles]%s: no support, replay_counter: %d, mismatched_counter: %d, last_mismatched_type: %d, \
+        // printk("[Shiroha]%s: no support, replay_counter: %d, mismatched_counter: %d, last_mismatched_type: %d, \
 		// 	last_mismatched_addr: 0x%08x, last_mismatched_data: 0x%08x, last_mismatched_size: %d.\n", 
 		// 	__func__, replay_counter, mismatched_counter, last_mismatched_type, last_mismatched_addr, 
 		// 	last_mismatched_data, last_mismatched_size);
 		// ret = ioread32be(i2c->base + reg);
 		// ret = i2c_read_32(reg);
-    // printk("[Myles]%s: (32)READ: addr: 0x%08x, val: 0x%08x.\n", __func__, reg, ret);
+    // printk("[Shiroha]%s: (32)READ: addr: 0x%08x, val: 0x%08x.\n", __func__, reg, ret);
 	return ret;
 }
 
@@ -536,7 +536,7 @@ static int xiic_wait_tx_empty(struct xiic_i2c *i2c)
 			isr = xiic_getreg32(i2c, XIIC_IISR_OFFSET)) {
 		if (time_after(jiffies, timeout)) {
 			dev_err(i2c->dev, "Timeout waiting at Tx empty\n");
-			printk("[Myles]%s: Timeout waiting at Tx empty\n", __func__);
+			printk("[Shiroha]%s: Timeout waiting at Tx empty\n", __func__);
 			return -ETIMEDOUT;
 		}
 	}
@@ -778,7 +778,7 @@ static irqreturn_t xiic_process(int irq, void *dev_id)
 		 * this is probably a TX error
 		 */
 
-		// printk("[Myles]%s: now in if 1...\n", __func__);
+		// printk("[Shiroha]%s: now in if 1...\n", __func__);
 
 		dev_dbg(i2c->adap.dev.parent, "%s error\n", __func__);
 
@@ -796,11 +796,11 @@ static irqreturn_t xiic_process(int irq, void *dev_id)
 	if (pend & XIIC_INTR_RX_FULL_MASK) {
 		/* Receive register/FIFO is full */
 		
-		// printk("[Myles]%s: now in if 2...\n", __func__);
+		// printk("[Shiroha]%s: now in if 2...\n", __func__);
 
 		clr |= XIIC_INTR_RX_FULL_MASK;
 		if (!i2c->rx_msg) {
-			// printk("[Myles]%s: now in if 2.1...\n", __func__);
+			// printk("[Shiroha]%s: now in if 2.1...\n", __func__);
 			dev_dbg(i2c->adap.dev.parent,
 				"%s unexpected RX IRQ\n", __func__);
 			xiic_clear_rx_fifo(i2c);
@@ -809,7 +809,7 @@ static irqreturn_t xiic_process(int irq, void *dev_id)
 
 		xiic_read_rx(i2c);
 		if (xiic_rx_space(i2c) == 0) {
-			// printk("[Myles]%s: now in if 2.2...\n", __func__);
+			// printk("[Shiroha]%s: now in if 2.2...\n", __func__);
 			/* this is the last part of the message */
 			i2c->rx_msg = NULL;
 
@@ -837,13 +837,13 @@ static irqreturn_t xiic_process(int irq, void *dev_id)
 	if (pend & (XIIC_INTR_TX_EMPTY_MASK | XIIC_INTR_TX_HALF_MASK)) {
 		/* Transmit register/FIFO is empty or ½ empty */
 
-		// printk("[Myles]%s: now in if 3....\n", __func__);
+		// printk("[Shiroha]%s: now in if 3....\n", __func__);
 
 		clr |= (pend &
 			(XIIC_INTR_TX_EMPTY_MASK | XIIC_INTR_TX_HALF_MASK));
 
 		if (!i2c->tx_msg) {
-			// printk("[Myles]%s: now in if 3.1....\n", __func__);
+			// printk("[Shiroha]%s: now in if 3.1....\n", __func__);
 			dev_dbg(i2c->adap.dev.parent,
 				"%s unexpected TX IRQ\n", __func__);
 			goto out;
@@ -851,30 +851,30 @@ static irqreturn_t xiic_process(int irq, void *dev_id)
 
 		if (i2c->dynamic)
 		{
-			// printk("[Myles]%s: now in if 3.2....\n", __func__);
+			// printk("[Shiroha]%s: now in if 3.2....\n", __func__);
 			xiic_fill_tx_fifo(i2c);
 		}
 		else
 		{
-			// printk("[Myles]%s: now in if 3.3....\n", __func__);
+			// printk("[Shiroha]%s: now in if 3.3....\n", __func__);
 			xiic_send_tx(i2c);
 		}
 
 		/* current message sent and there is space in the fifo */
 		if (!xiic_tx_space(i2c) && xiic_tx_fifo_space(i2c) >= 2) {
 
-			// printk("[Myles]%s: now in if 3.4....\n", __func__);
+			// printk("[Shiroha]%s: now in if 3.4....\n", __func__);
 
 			dev_dbg(i2c->adap.dev.parent,
 				"%s end of message sent, nmsgs: %d\n",
 				__func__, i2c->nmsgs);
 			if (i2c->nmsgs > 1) {
-				// printk("[Myles]%s: now in if 3.4.1....\n", __func__);
+				// printk("[Shiroha]%s: now in if 3.4.1....\n", __func__);
 				i2c->nmsgs--;
 				i2c->tx_msg++;
 				__xiic_start_xfer(i2c);
 			} else {
-				// printk("[Myles]%s: now in if 3.4.2....\n", __func__);
+				// printk("[Shiroha]%s: now in if 3.4.2....\n", __func__);
 				xiic_irq_dis(i2c, XIIC_INTR_TX_HALF_MASK);
 
 				dev_dbg(i2c->adap.dev.parent,
@@ -883,7 +883,7 @@ static irqreturn_t xiic_process(int irq, void *dev_id)
 			}
 		} else if (!xiic_tx_space(i2c) && (i2c->nmsgs == 1))
 		{
-			// printk("[Myles]%s: now in if 3.5....\n", __func__);
+			// printk("[Shiroha]%s: now in if 3.5....\n", __func__);
 			/* current frame is sent and is last,
 			 * make sure to disable tx half
 			 */
@@ -892,7 +892,7 @@ static irqreturn_t xiic_process(int irq, void *dev_id)
 	}
 
 	if (pend & XIIC_INTR_BNB_MASK) {
-		// printk("[Myles]%s: now in if 4....\n", __func__);
+		// printk("[Shiroha]%s: now in if 4....\n", __func__);
 		/* IIC bus has transitioned to not busy */
 		clr |= XIIC_INTR_BNB_MASK;
 
@@ -901,19 +901,19 @@ static irqreturn_t xiic_process(int irq, void *dev_id)
 
 		if (!i2c->tx_msg)
 		{
-			// printk("[Myles]%s: now in if 4.1....\n", __func__);
+			// printk("[Shiroha]%s: now in if 4.1....\n", __func__);
 			goto out;
 		}
 
 		if (i2c->nmsgs == 1 && !i2c->rx_msg &&
 		    xiic_tx_space(i2c) == 0)
 		{
-			// printk("[Myles]%s: now in if 4.2....\n", __func__);
+			// printk("[Shiroha]%s: now in if 4.2....\n", __func__);
 			xiic_wakeup(i2c, STATE_DONE);
 		}
 		else
 		{
-			// printk("[Myles]%s: now in if 4.3....\n", __func__);
+			// printk("[Shiroha]%s: now in if 4.3....\n", __func__);
 			xiic_wakeup(i2c, STATE_ERROR);
 		}
 	}
@@ -921,7 +921,7 @@ static irqreturn_t xiic_process(int irq, void *dev_id)
 out:
 	dev_dbg(i2c->adap.dev.parent, "%s clr: 0x%x\n", __func__, clr);
 
-	// printk("[Myles]%s: clearing %dth interrupt at 0x%08x with value: 0x%08x...\n", __func__, ++irq_counter, XIIC_IISR_OFFSET, clr);
+	// printk("[Shiroha]%s: clearing %dth interrupt at 0x%08x with value: 0x%08x...\n", __func__, ++irq_counter, XIIC_IISR_OFFSET, clr);
 	xiic_setreg32(i2c, XIIC_IISR_OFFSET, clr);
 	mutex_unlock(&i2c->lock);
 
@@ -931,7 +931,7 @@ out:
 	// mutex_unlock(&irq_status_recording_mutex);
 
 	// Clear the interrupt
-	// printk("[Myles]%s: clear irq status 1.\n", __func__);
+	// printk("[Shiroha]%s: clear irq status 1.\n", __func__);
 	clear_irq_status(iomem_addr_i2c);
 
 	return IRQ_HANDLED;
@@ -1183,7 +1183,7 @@ static irqreturn_t xiic_isr(int irq, void *dev_id)
 		u32 data_to_return = 0;
 		int replay_res = replay_next_command_if_possible(SEC_REPLAY_TYPE_IRQ, 0, SEC_CAM_DUMMY_DATA_4_32BIT, SEC_CAM_DUMMY_DATA_4_32BIT, &data_to_return);
 		if (replay_res == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 		
 		if (replay_res)
 			return IRQ_NONE;
@@ -1206,16 +1206,16 @@ static irqreturn_t xiic_isr(int irq, void *dev_id)
 
 	dev_dbg(i2c->adap.dev.parent, "%s entry\n", __func__);
 
-	// printk("[Myles]%s: (1)handling %dth irq with total_num_of_commands: %d\n", __func__, irq_total_counter, total_num_of_commands);
+	// printk("[Shiroha]%s: (1)handling %dth irq with total_num_of_commands: %d\n", __func__, irq_total_counter, total_num_of_commands);
 	isr = xiic_getreg32(i2c, XIIC_IISR_OFFSET);
-	// printk("[Myles]%s: (2)handling %dth irq with total_num_of_commands: %d\n", __func__, irq_total_counter, total_num_of_commands);
+	// printk("[Shiroha]%s: (2)handling %dth irq with total_num_of_commands: %d\n", __func__, irq_total_counter, total_num_of_commands);
 	ier = xiic_getreg32(i2c, XIIC_IIER_OFFSET);
-	// printk("[Myles]%s: (3)handling %dth irq with total_num_of_commands: %d\n", __func__, irq_total_counter, total_num_of_commands);
+	// printk("[Shiroha]%s: (3)handling %dth irq with total_num_of_commands: %d\n", __func__, irq_total_counter, total_num_of_commands);
 	pend = isr & ier;
 	if (pend)
 		ret = IRQ_WAKE_THREAD;
 
-	// printk("[Myles]%s: about to handle potential %dth interrupt with pend: %d, ret: %d\n", __func__, ++irq_total_counter, pend, ret);
+	// printk("[Shiroha]%s: about to handle potential %dth interrupt with pend: %d, ret: %d\n", __func__, ++irq_total_counter, pend, ret);
 
 	// For reocrding: end of dealing with irq
 	// mutex_lock(&irq_status_recording_mutex);
@@ -1225,7 +1225,7 @@ static irqreturn_t xiic_isr(int irq, void *dev_id)
 	// Clear the interrupt early if needed
 	if (ret != IRQ_WAKE_THREAD)
 	{
-		// printk("[Myles]%s: clear irq status 0.\n", __func__);
+		// printk("[Shiroha]%s: clear irq status 0.\n", __func__);
 		clear_irq_status(iomem_addr_i2c);
 	}
 
@@ -1368,7 +1368,7 @@ static const struct i2c_adapter xiic_adapter = {
 
 static int xiic_i2c_probe(struct platform_device *pdev)
 {
-	// Myles: record & replay init
+	// Shiroha: record & replay init
 	// init_recording();
 	init_replaying();
 
@@ -1383,13 +1383,13 @@ static int xiic_i2c_probe(struct platform_device *pdev)
 	if (!i2c)
 		return -ENOMEM;
 
-    // Myles: do secure IO re-config
+    // Shiroha: do secure IO re-config
     if ((iomem_addr_i2c == 0) || (iomem_addr_i2c == NULL))
     {
         pdev->dev.id = 667;
         // pdev->dev.coherent_dma_mask = -1;
         iomem_addr_i2c = dma_alloc_coherent(&pdev->dev, 4096, &dma_handle_4_i2c, GFP_KERNEL | GFP_DMA);
-        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75001000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_i2c: 0x%016lx...\n", __func__, iomem_addr_i2c, iomem_addr_i2c == NULL, virt_to_phys(iomem_addr_i2c), dma_handle_4_i2c);
+        printk("[Shiroha]%s: after dma_alloc_coherent with phy addr: 0x75001000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_i2c: 0x%016lx...\n", __func__, iomem_addr_i2c, iomem_addr_i2c == NULL, virt_to_phys(iomem_addr_i2c), dma_handle_4_i2c);
     }
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);

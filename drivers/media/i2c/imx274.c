@@ -27,23 +27,23 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
 
-// Myles secure IO
+// Shiroha secure IO
 #include <linux/dma-mapping.h>
 dma_addr_t dma_handle_4_imx274;
 u64 iomem_addr_imx274 = 0;
 
 static inline void execute_tcs_command(const u64 addr, const u32 command_data, const u32 command_data_receipt)
 {
-	// printk("[Myles]%s: write: going to execute tcs command: 0x%08x at addr: 0x%08x.\n", __func__, command_data, addr);
+	// printk("[Shiroha]%s: write: going to execute tcs command: 0x%08x at addr: 0x%08x.\n", __func__, command_data, addr);
 	iowrite32(command_data, addr);
-	// printk("[Myles]%s: read: going to execute tcs command at addr: 0x%08x.\n", __func__, addr);
+	// printk("[Shiroha]%s: read: going to execute tcs command at addr: 0x%08x.\n", __func__, addr);
 	u32 temp_read_data = ioread32(addr);
-	// printk("[Myles]%s: read: get: 0x%08x at addr: 0x%08x.\n", __func__, temp_read_data, addr);
+	// printk("[Shiroha]%s: read: get: 0x%08x at addr: 0x%08x.\n", __func__, temp_read_data, addr);
 	while (temp_read_data != command_data_receipt)
 	{
 		temp_read_data = ioread32(addr);
 	}
-	// printk("[Myles]%s: write: exection of tcs command: 0x%08x at addr: 0x%08x is done.\n", __func__, command_data, addr);
+	// printk("[Shiroha]%s: write: exection of tcs command: 0x%08x at addr: 0x%08x is done.\n", __func__, command_data, addr);
 }
 
 // TCS driver
@@ -608,7 +608,7 @@ static int imx274_write_table(struct stimx274 *priv, const struct reg_8 table[])
             {
 				// err = regmap_write(regmap,
 				// 		   range_start, range_vals[0]);
-                // printk("[Myles]%s: writing to offset: %08x, data: %08x (%d).\n", __func__, range_start, range_vals[0], err);
+                // printk("[Shiroha]%s: writing to offset: %08x, data: %08x (%d).\n", __func__, range_start, range_vals[0], err);
 				regmap_write(regmap, range_start, range_vals[0]);
             }
 			else if (range_count > 1)
@@ -616,7 +616,7 @@ static int imx274_write_table(struct stimx274 *priv, const struct reg_8 table[])
 				// err = regmap_bulk_write(regmap, range_start,
 				// 			&range_vals[0],
 				// 			range_count);
-                // printk("[Myles]%s: writing to offset: %08x, data: %08x, num: %d (%d).\n", __func__, range_start, *(u32*)(range_vals), range_count, err);
+                // printk("[Shiroha]%s: writing to offset: %08x, data: %08x, num: %d (%d).\n", __func__, range_start, *(u32*)(range_vals), range_count, err);
                 regmap_bulk_write(regmap, range_start, &range_vals[0], range_count);
             }
 			else
@@ -653,7 +653,7 @@ static inline int imx274_write_reg(struct stimx274 *priv, u16 addr, u8 val)
 	int err = 0;
 
 	// err = regmap_write(priv->regmap, addr, val);
-    // printk("[Myles]%s: writing to offset: %08x, data: %08x (%d).\n", __func__, addr, val, err);
+    // printk("[Shiroha]%s: writing to offset: %08x, data: %08x (%d).\n", __func__, addr, val, err);
 	regmap_write(priv->regmap, addr, val);
 	if (err)
 		dev_err(&priv->client->dev,
@@ -687,7 +687,7 @@ static int imx274_read_mbreg(struct stimx274 *priv, u16 addr, u32 *val,
 	int err;
 
 	err = regmap_bulk_read(priv->regmap, addr, &val_le, nbytes);
-    // printk("[Myles]%s: reading from offset: %08x, data: %08x, nbytes: %08x (%d).\n", __func__, addr, val_le, nbytes, err);
+    // printk("[Shiroha]%s: reading from offset: %08x, data: %08x, nbytes: %08x (%d).\n", __func__, addr, val_le, nbytes, err);
 	if (err) {
 		dev_err(&priv->client->dev,
 			"%s : i2c bulk read failed, %x (%zu bytes)\n",
@@ -719,7 +719,7 @@ static int imx274_write_mbreg(struct stimx274 *priv, u16 addr, u32 val,
 	__le32 val_le = cpu_to_le32(val);
 	int err = 0;
 
-    // printk("[Myles]%s: writing to offset: 0x%08x, data: 0x%08x(0x%08x), nbytes: %d (%d).\n", __func__, addr, val_le, val, nbytes, err);
+    // printk("[Shiroha]%s: writing to offset: 0x%08x, data: 0x%08x(0x%08x), nbytes: %d (%d).\n", __func__, addr, val_le, val, nbytes, err);
 	// err = regmap_bulk_write(priv->regmap, addr, &val_le, nbytes);
 	regmap_bulk_write(priv->regmap, addr, &val_le, nbytes);
 	if (err)
@@ -816,7 +816,7 @@ static int imx274_s_ctrl(struct v4l2_ctrl *ctrl)
 
 	if (secure_cam_is_in_tcs_mode)
 	{
-		printk("[Myles]%s: new ctrl->id: %d, skipping\n", __func__, ctrl->id);
+		printk("[Shiroha]%s: new ctrl->id: %d, skipping\n", __func__, ctrl->id);
 		return 0;
 	}
 
@@ -1249,7 +1249,7 @@ static int imx274_g_frame_interval(struct v4l2_subdev *sd,
 {
 	struct stimx274 *imx274 = to_imx274(sd);
 	
-	printk("[Myles]%s: getting frame interval, frame rate = %d / %d\n", __func__, imx274->frame_interval.numerator, imx274->frame_interval.denominator);
+	printk("[Shiroha]%s: getting frame interval, frame rate = %d / %d\n", __func__, imx274->frame_interval.numerator, imx274->frame_interval.denominator);
 
 	fi->interval = imx274->frame_interval;
 	dev_dbg(&imx274->client->dev, "%s frame rate = %d / %d\n",
@@ -1274,7 +1274,7 @@ static int imx274_s_frame_interval(struct v4l2_subdev *sd,
 
 	if (secure_cam_is_in_tcs_mode)
 	{
-		printk("[Myles]%s: setting frame interval, frame rate = %d / %d, skipping\n", __func__, fi->interval.numerator, fi->interval.denominator);
+		printk("[Shiroha]%s: setting frame interval, frame rate = %d / %d, skipping\n", __func__, fi->interval.numerator, fi->interval.denominator);
 		return 0;
 	}
 
@@ -1385,14 +1385,14 @@ static int imx274_s_stream(struct v4l2_subdev *sd, int on)
 	ktime_t start_time, end_time;
 	if (secure_cam_is_in_tcs_mode)
 	{
-		printk("[Myles]%s: mode: %td, on(or not): %d, skipping.\n", __func__, imx274->mode - &imx274_modes[0], on);
+		printk("[Shiroha]%s: mode: %td, on(or not): %d, skipping.\n", __func__, imx274->mode - &imx274_modes[0], on);
 		if (on)
 		{
 			start_time = ktime_get();
 			execute_tcs_command(iomem_addr_imx274 + IO_ADDR_HIGH_TCS_COMMAND_OFFSET, 
 				IO_ADDR_HIGH_TCS_COMMAND_START,IO_ADDR_HIGH_TCS_COMMAND_START + IO_ADDR_HIGH_TCS_COMMAND_RECIPT_OFFSET);
 			end_time = ktime_get();
-			printk("[Myles]%s: recording has started, time elapsed: %lld ns.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
+			printk("[Shiroha]%s: recording has started, time elapsed: %lld ns.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
 		}
 		else
 		{
@@ -1400,7 +1400,7 @@ static int imx274_s_stream(struct v4l2_subdev *sd, int on)
 			execute_tcs_command(iomem_addr_imx274 + IO_ADDR_HIGH_TCS_COMMAND_OFFSET, 
 				IO_ADDR_HIGH_TCS_COMMAND_STOP,IO_ADDR_HIGH_TCS_COMMAND_STOP + IO_ADDR_HIGH_TCS_COMMAND_RECIPT_OFFSET);
 			end_time = ktime_get();
-			printk("[Myles]%s: recording has stopped, time elapsed: %lld ns.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
+			printk("[Shiroha]%s: recording has stopped, time elapsed: %lld ns.\n", __func__, ktime_to_ns(ktime_sub(end_time, start_time)));
 		}
 		return 0;
 	}
@@ -1945,20 +1945,20 @@ static int imx274_probe(struct i2c_client *client)
 	v4l2_i2c_subdev_init(sd, client, &imx274_subdev_ops);
 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE | V4L2_SUBDEV_FL_HAS_EVENTS;
 
-	// Myles: do secure IO re-config
+	// Shiroha: do secure IO re-config
     if ((iomem_addr_imx274 == 0) || (iomem_addr_imx274 == NULL))
     {
 		int cached_subdev_id = sd->dev->id; 
         sd->dev->id = 667;
         // sd->dev.coherent_dma_mask = -1;
         iomem_addr_imx274 = dma_alloc_coherent(sd->dev, 4096, &dma_handle_4_imx274, GFP_KERNEL | GFP_DMA);
-        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75001000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_imx274: 0x%016lx...\n", __func__, iomem_addr_imx274, iomem_addr_imx274 == NULL, virt_to_phys(iomem_addr_imx274), dma_handle_4_imx274);
+        printk("[Shiroha]%s: after dma_alloc_coherent with phy addr: 0x75001000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_imx274: 0x%016lx...\n", __func__, iomem_addr_imx274, iomem_addr_imx274 == NULL, virt_to_phys(iomem_addr_imx274), dma_handle_4_imx274);
 		sd->dev->id = cached_subdev_id;
 	}
 	// if ((iomem_addr_imx274 == 0) || (iomem_addr_imx274 == NULL))
 	// {
 	// 	iomem_addr_imx274 = phys_to_virt(IO_ADDR_HIGH_MB_4_IMX274_BASE);
-	// 	printk("[Myles]%s: for phys_addr: 0x%016llx, we get virt_addr: 0x%016llx.\n", __func__, IO_ADDR_HIGH_MB_4_IMX274_BASE, iomem_addr_imx274);
+	// 	printk("[Shiroha]%s: for phys_addr: 0x%016llx, we get virt_addr: 0x%016llx.\n", __func__, IO_ADDR_HIGH_MB_4_IMX274_BASE, iomem_addr_imx274);
 	// }
 
 	/* initialize subdev media pad */

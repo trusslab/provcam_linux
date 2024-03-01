@@ -378,9 +378,9 @@ int xvip_init_resources(struct xvip_device *xvip)
 		return PTR_ERR(xvip->clk);
 
     // if (xvip->clk->core)
-    //     printk("[myles]%s: for device id: %d, going to prepare clk with min: %lu, max: %lu, rate: %lu, req_rate: %lu, new_rate: %lu, core_min: %lu, core_max: %lu.\n", __func__, xvip->id, xvip->clk->min_rate, xvip->clk->max_rate, xvip->clk->core->rate, xvip->clk->core->req_rate, xvip->clk->core->new_rate, xvip->clk->core->min_rate, xvip->clk->core->max_rate);
+    //     printk("[shiroha]%s: for device id: %d, going to prepare clk with min: %lu, max: %lu, rate: %lu, req_rate: %lu, new_rate: %lu, core_min: %lu, core_max: %lu.\n", __func__, xvip->id, xvip->clk->min_rate, xvip->clk->max_rate, xvip->clk->core->rate, xvip->clk->core->req_rate, xvip->clk->core->new_rate, xvip->clk->core->min_rate, xvip->clk->core->max_rate);
     // else
-    //     printk("[myles]%s: for device id: %d, going to prepare clk with min: %lu, max: %lu.\n", __func__, xvip->id, xvip->clk->min_rate, xvip->clk->max_rate);
+    //     printk("[shiroha]%s: for device id: %d, going to prepare clk with min: %lu, max: %lu.\n", __func__, xvip->id, xvip->clk->min_rate, xvip->clk->max_rate);
 
 	clk_prepare_enable(xvip->clk);
 	return 0;

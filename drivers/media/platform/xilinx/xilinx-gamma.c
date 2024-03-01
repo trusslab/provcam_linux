@@ -85,7 +85,7 @@ struct xgamma_dev {
 
 
 
-// Myles secure IO
+// Shiroha secure IO
 #include <linux/dma-mapping.h>
 dma_addr_t dma_handle_4_xg;
 u64 iomem_addr_xg = 0;
@@ -133,7 +133,7 @@ void check_and_switch_to_next_presets_4_xg(void)
 		}
 	}
 
-	// printk("[Myles]%s: we have now switched to status: %d.\n", __func__, xg_replay_status);
+	// printk("[Shiroha]%s: we have now switched to status: %d.\n", __func__, xg_replay_status);
 }
 
 static inline u32 xg_read(struct xgamma_dev *xg, u32 reg)
@@ -145,7 +145,7 @@ static inline u32 xg_read(struct xgamma_dev *xg, u32 reg)
 		u32 data_to_return = 0;
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_READ, 32, reg, 0, &data_to_return);
 		if (replay_result == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 
 		return data_to_return;
 	}
@@ -161,7 +161,7 @@ static inline u32 xg_read(struct xgamma_dev *xg, u32 reg)
     {
         temp_reading_data = ioread32(iomem_addr_xg + 4);
     }
-    // printk("[Myles]%s: reading from addr: 0x%08x, data: 0x%08x.\n", __func__, reg, temp_reading_data);
+    // printk("[Shiroha]%s: reading from addr: 0x%08x, data: 0x%08x.\n", __func__, reg, temp_reading_data);
     
     // Record
 	// lock_irq_status_recording_mutex(1);
@@ -181,7 +181,7 @@ static inline void xg_write(struct xgamma_dev *xg, u32 reg, u32 data)
 		u32 data_to_return = 0;
 		replay_result = replay_next_command_if_possible(SEC_REPLAY_TYPE_WRITE, 32, reg, data, &data_to_return);
 		if (replay_result == -1)
-			printk("[Myles]%s: replay error.\n", __func__);
+			printk("[Shiroha]%s: replay error.\n", __func__);
 
 		return;
 	}
@@ -203,7 +203,7 @@ static inline void xg_write(struct xgamma_dev *xg, u32 reg, u32 data)
         done_indicator = ioread32(iomem_addr_xg + 16);
     }
     
-    // printk("[Myles]%s: writing to addr: 0x%08x, data: 0x%08x, done_indicator: 0x%08x.\n", __func__, reg, data, done_indicator);
+    // printk("[Shiroha]%s: writing to addr: 0x%08x, data: 0x%08x, done_indicator: 0x%08x.\n", __func__, reg, data, done_indicator);
 	
 	// unlock for recording
 	// lock_recording_mutex(0);
@@ -529,7 +529,7 @@ static int xg_parse_of(struct xgamma_dev *xg)
 
 static int xg_probe(struct platform_device *pdev)
 {
-	// Myles: record & replay init
+	// Shiroha: record & replay init
 	// init_recording();
 	init_replaying();
 
@@ -544,13 +544,13 @@ static int xg_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	xg->xvip.dev = &pdev->dev;
 
-    // Myles: do secure IO re-config
+    // Shiroha: do secure IO re-config
     if ((iomem_addr_xg == 0) || (iomem_addr_xg == NULL))
     {
         pdev->dev.id = 669;
         // pdev->dev.coherent_dma_mask = -1;
         iomem_addr_xg = dma_alloc_coherent(&pdev->dev, 4096, &dma_handle_4_xg, GFP_KERNEL | GFP_DMA);
-        printk("[Myles]%s: after dma_alloc_coherent with phy addr: 0x75003000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_xg: 0x%016lx...\n", __func__, iomem_addr_xg, iomem_addr_xg == NULL, virt_to_phys(iomem_addr_xg), dma_handle_4_xg);
+        printk("[Shiroha]%s: after dma_alloc_coherent with phy addr: 0x75003000, we get iomem_addr: 0x%016lx (%d) with physical: 0x%016lx and dma_handle_4_xg: 0x%016lx...\n", __func__, iomem_addr_xg, iomem_addr_xg == NULL, virt_to_phys(iomem_addr_xg), dma_handle_4_xg);
     }
     
 	rval = xg_parse_of(xg);
@@ -620,7 +620,7 @@ static int xg_probe(struct platform_device *pdev)
 		 "Xilinx %d-bit Video Gamma Correction LUT registered",
 		 xg->color_depth);
 
-    myles_printk("[myles]xg_probe: xg is probed.\n");
+    shiroha_printk("[shiroha]xg_probe: xg is probed.\n");
 
 	return 0;
 ctrl_error:

@@ -76,7 +76,7 @@ static int replay_next_command_if_possible(
 		(!current_replay_preset_addr) || 
 		(!current_replay_preset_data))
 	{
-		printk("[Myles]%s: null preset detected; have you setup the preset yet?\n", __func__);
+		printk("[Shiroha]%s: null preset detected; have you setup the preset yet?\n", __func__);
 		return -1;
 	}
 
@@ -87,23 +87,23 @@ static int replay_next_command_if_possible(
 	// check if type, size, addr, and data are matched
 	if (requested_replay_addr != current_replay_preset_addr[replay_counter])
 	{
-		printk("[Myles]%s: requested replay addr mismatch at replay counter: %d: requested: 0x%08x v.s. recorded: 0x%08x.\n", __func__, replay_counter, requested_replay_addr, current_replay_preset_addr[replay_counter]);
+		printk("[Shiroha]%s: requested replay addr mismatch at replay counter: %d: requested: 0x%08x v.s. recorded: 0x%08x.\n", __func__, replay_counter, requested_replay_addr, current_replay_preset_addr[replay_counter]);
 		return -1;
 	}
 	if ((requested_replay_type == SEC_REPLAY_TYPE_WRITE) && 
 		(requested_replay_val != current_replay_preset_data[replay_counter]))
 	{
-		printk("[Myles]%s: requested replay data mismatch at replay counter: %d: requested: 0x%08x v.s. recorded: 0x%08x.\n", __func__, replay_counter, requested_replay_val, current_replay_preset_data[replay_counter]);
+		printk("[Shiroha]%s: requested replay data mismatch at replay counter: %d: requested: 0x%08x v.s. recorded: 0x%08x.\n", __func__, replay_counter, requested_replay_val, current_replay_preset_data[replay_counter]);
 		return -1;
 	}
 	if (requested_replay_type != current_replay_preset_cmd_type[replay_counter])
 	{
-		printk("[Myles]%s: requested replay type mismatch at replay counter: %d: requested: %d v.s. recorded: %d.\n", __func__, replay_counter, requested_replay_type, current_replay_preset_cmd_type[replay_counter]);
+		printk("[Shiroha]%s: requested replay type mismatch at replay counter: %d: requested: %d v.s. recorded: %d.\n", __func__, replay_counter, requested_replay_type, current_replay_preset_cmd_type[replay_counter]);
 		return -1;
 	}
 	if (requested_replay_size != current_replay_preset_size[replay_counter])
 	{
-		printk("[Myles]%s: requested replay size mismatch at replay counter: %d: requested: %d v.s. recorded: %d.\n", __func__, replay_counter, requested_replay_size, current_replay_preset_size[replay_counter]);
+		printk("[Shiroha]%s: requested replay size mismatch at replay counter: %d: requested: %d v.s. recorded: %d.\n", __func__, replay_counter, requested_replay_size, current_replay_preset_size[replay_counter]);
 		return -1;
 	}
 

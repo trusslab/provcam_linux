@@ -77,7 +77,7 @@ struct xvcu_priv {
  */
 static inline u32 xvcu_read(void __iomem *iomem, u32 offset)
 {
-	printk("[Myles]%s: read from 0x%016llx (0x%016llx) with offset 0x%08x.\n", __func__, iomem, virt_to_phys(iomem), offset);
+	printk("[Shiroha]%s: read from 0x%016llx (0x%016llx) with offset 0x%08x.\n", __func__, iomem, virt_to_phys(iomem), offset);
 	return ioread32(iomem + offset);
 }
 
@@ -89,7 +89,7 @@ static inline u32 xvcu_read(void __iomem *iomem, u32 offset)
  */
 static inline void xvcu_write(void __iomem *iomem, u32 offset, u32 value)
 {
-	printk("[Myles]%s: write 0x%08x to 0x%016llx (0x%016llx) with offset 0x%08x.\n", __func__, value, iomem, virt_to_phys(iomem), offset);
+	printk("[Shiroha]%s: write 0x%08x to 0x%016llx (0x%016llx) with offset 0x%08x.\n", __func__, value, iomem, virt_to_phys(iomem), offset);
 	iowrite32(value, iomem + offset);
 }
 
@@ -312,7 +312,7 @@ static int xvcu_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-    myles_printk("[myles]xvcu_probe: xvcu is probed.\n");
+    shiroha_printk("[shiroha]xvcu_probe: xvcu is probed.\n");
 	dev_info(&pdev->dev, "%s: Probed successfully\n", __func__);
 
 	return ret;

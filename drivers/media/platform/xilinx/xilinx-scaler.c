@@ -664,7 +664,7 @@ static int xscaler_probe(struct platform_device *pdev)
 		goto error;
 	}
 
-    myles_printk("[myles]xscaler_probe: xscaler is probed.\n");
+    shiroha_printk("[shiroha]xscaler_probe: xscaler is probed.\n");
 
 	return 0;
 

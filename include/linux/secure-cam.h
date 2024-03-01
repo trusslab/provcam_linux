@@ -44,7 +44,7 @@ static inline void clear_irq_status(u64 iomem_addr)
 	{
 		temp_reading_data = ioread32(iomem_addr + 20);
 	}
-	// printk("[Myles]%s: An IRQ has been cleared...\n", __func__);
+	// printk("[Shiroha]%s: An IRQ has been cleared...\n", __func__);
 }
 
 #endif /* _LINUX_SECURE_CAM_H */
